@@ -1,0 +1,12 @@
+# Local Corezoid experiments and exports
+processes/
+.processes/
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/
+
+# Temporary files
+*.tmp
+*.log

@@ -1,0 +1,19 @@
+{
+  "product": {
+    "website": "https://corezoid.com",
+    "productAnatomy": "https://corezoid.com/product/",
+    "processes": "https://corezoid.com/processes/",
+    "apiManagement": "https://corezoid.com/manage-api/",
+    "learn": "https://corezoid.com/learn/",
+    "tutorials": "https://corezoid.com/tutorials/",
+    "termsAndPolicies": "https://corezoid.com/terms-and-conditions/"
+  },
+  "publicCode": {
+    "githubOrg": "https://github.com/corezoid",
+    "bundledRepository": "https://github.com/corezoid/corezoid-ai-doc"
+  },
+  "bundledSource": {
+    "path": "../source/",
+    "fileIndex": "../source-file-index.txt"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "name": "corezoid",
+  "interface": {
+    "displayName": "Corezoid"
+  },
+  "plugins": [
+    {
+      "name": "corezoid",
+      "source": {
+        "source": "local",
+        "path": "./plugins/corezoid"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

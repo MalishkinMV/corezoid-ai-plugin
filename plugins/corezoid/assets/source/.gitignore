@@ -1,0 +1,21 @@
+node_modules/
+package-lock.json
+.DS_Store
+.envrc
+.processes
+.idea
+.vscode
+convctl
+yarn.lock
+
+# Secrets — never commit
+.env
+.mcp.json
+
+# Local session / tool state — machine-specific, no value in repo
+.claude/
+__pycache__/
+
+# Generated virtualenv and lock file (reproducible from pyproject.toml)
+mcp-server/.venv/
+mcp-server/uv.lock

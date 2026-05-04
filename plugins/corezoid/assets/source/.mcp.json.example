@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "corezoid": {
+      "type": "stdio",
+      "command": "/path/to/uv",
+      "args": [
+        "run",
+        "--project",
+        "/path/to/corezoid-ai-doc/mcp-server",
+        "python",
+        "/path/to/corezoid-ai-doc/mcp-server/main.py"
+      ],
+      "env": {
+        "API_LOGIN": "your_numeric_api_login",
+        "SECRET": "your_api_secret_key",
+        "BASE_URL": "https://www.corezoid.com/api/2/json",
+        "COMPANY_ID": "your-workspace-uuid",
+        "FOLDER_ID": "your_folder_id"
+      }
+    }
+  }
+}

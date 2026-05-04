@@ -1,0 +1,58 @@
+name: Publish NPM Package
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      matrix:
+        arch: [x64, arm64]
+        include:
+          - arch: x64
+            convctl-package: '@corezoid/convctl-linux-x64@1.0.146081'
+          - arch: arm64
+            convctl-package: '@corezoid/convctl-linux-arm64@1.0.146081'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        registry-url: 'https://npm.pkg.github.com'
+        scope: '@${{ github.repository_owner }}'
+
+    - name: Set version from tag
+      run: |
+        VERSION=${GITHUB_REF#refs/tags/v}
+        sed -i "s/\"version\": \".*\"/\"version\": \"$VERSION\"/" package.json
+
+    - name: Update convctl dependency for architecture
+      run: |
+        # Remove the generic convctl dependency
+        npm uninstall @corezoid/convctl
+        # Install the architecture-specific convctl package (ignore platform checks)
+        npm install ${{ matrix.convctl-package }} --force
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Build package
+      run: npm run build --if-present
+
+    - name: Update package name for architecture
+      run: |
+        ARCH_SUFFIX="-${{ matrix.arch }}"
+        sed -i "s/\"@corezoid\/corezoid-ai-doc\"/\"@corezoid\/corezoid-ai-doc${ARCH_SUFFIX}\"/" package.json
+
+    - name: Publish to GitHub Packages
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

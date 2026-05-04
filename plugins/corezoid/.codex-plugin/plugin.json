@@ -1,0 +1,56 @@
+{
+  "name": "corezoid",
+  "version": "1.0.1",
+  "description": "Corezoid product knowledge, workflow skills, public docs, schemas, templates, playbooks, samples, and MCP reference data for Codex.",
+  "author": {
+    "name": "Corezoid Inc.",
+    "email": "support@corezoid.com",
+    "url": "https://corezoid.com"
+  },
+  "homepage": "https://corezoid.com",
+  "repository": "https://github.com/corezoid/corezoid-ai-doc",
+  "license": "MIT",
+  "keywords": [
+    "corezoid",
+    "actor-engine",
+    "process-engine",
+    "api-orchestration",
+    "workflow-automation",
+    "dashboards",
+    "mcp",
+    "json-schema"
+  ],
+  "skills": "./skills/",
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Corezoid",
+    "shortDescription": "Build, review, document, and automate Corezoid processes with Codex.",
+    "longDescription": "Corezoid for Codex packages product knowledge, public docs, workflow skills, schemas, templates, playbooks, samples, and MCP reference material for Corezoid Actor Engine. Use it to design process architectures, create API connectors and logic processes, expose processes through API Gateway, audit process JSON, debug updates, document workflows, and plan dashboards.",
+    "developerName": "Corezoid Inc.",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Process Design",
+      "API Orchestration",
+      "Workflow Automation",
+      "Process Review",
+      "Documentation",
+      "Dashboards"
+    ],
+    "websiteURL": "https://corezoid.com",
+    "privacyPolicyURL": "https://corezoid.com/terms-and-conditions/",
+    "termsOfServiceURL": "https://corezoid.com/terms-and-conditions/",
+    "defaultPrompt": [
+      "Design a Corezoid process architecture.",
+      "Build a Corezoid API connector.",
+      "Review my Corezoid process JSON."
+    ],
+    "brandColor": "#010F5C",
+    "composerIcon": "./assets/icon.png",
+    "logo": "./assets/logo.png",
+    "screenshots": [
+      "./assets/screenshot1.png",
+      "./assets/screenshot2.png",
+      "./assets/screenshot3.png"
+    ]
+  }
+}

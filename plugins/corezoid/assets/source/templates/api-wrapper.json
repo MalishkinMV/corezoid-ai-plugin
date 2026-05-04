@@ -1,0 +1,647 @@
+{
+  "obj_type": 1,
+  "obj_id": 1758751,
+  "parent_id": 647266,
+  "title": "Template API wrapper",
+  "description": "",
+  "status": "active",
+  "params": [],
+  "ref_mask": true,
+  "conv_type": "process",
+  "scheme": {
+    "nodes": [
+      {
+        "id": "693c1e39e552e88ac46c8c62",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "type": "api",
+              "is_migrate": true,
+              "rfc_format": true,
+              "format": "",
+              "content_type": "application/json",
+              "method": "POST",
+              "url": "{{_leanUrl}}",
+              "extra": {
+                "api_id": "{{_apiId}}",
+                "app_id": "{{api_gateway.request.headers.App-Id}}",
+                "request_path": "{{api_gateway.request.path}}",
+                "request_method": "{{api_gateway.request.method}}",
+                "request_body": "{{api_gateway.request.body}}",
+                "response_status": "200",
+                "response_body": "{{rsp}}"
+              },
+              "extra_type": {
+                "api_id": "string",
+                "app_id": "string",
+                "request_path": "string",
+                "request_method": "string",
+                "request_body": "object",
+                "response_status": "number",
+                "response_body": "object"
+              },
+              "extra_headers": {
+                "content-type": "application/json; charset=utf-8"
+              },
+              "cert_pem": "",
+              "max_threads": 5,
+              "send_sys": true,
+              "debug_info": false,
+              "err_node_id": "693c1e39e552e88ac46c8c74",
+              "customize_response": false,
+              "response": {
+                "header": "{{header}}",
+                "body": "{{body}}"
+              },
+              "response_type": {
+                "header": "object",
+                "body": "object"
+              },
+              "version": 2
+            },
+            {
+              "type": "go",
+              "to_node_id": "693c204de552e88ac46d2af7"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 1160,
+        "y": 1672,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "693c1e2be552e88ac46c8904",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "type": "go_if_const",
+              "to_node_id": "693c1e39e552e88ac46c8c62",
+              "conditions": [
+                {
+                  "param": "_leanUrl",
+                  "const": "",
+                  "fun": "not_eq",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffb93db677ac4b9f3f144e"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 680,
+        "y": 1624,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffbcfbe552e81908403f2a",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "type": "api_code",
+              "lang": "js",
+              "src": "\nvar start_state = JSON.parse(JSON.stringify(data));\ndata[\"start_state\"] = start_state;\n\n// if any of these variables were passed, then it needs to be set here.\ndata._leanUrl = \"{{LEAN_URL}}\";\ndata._workspaceID = \"{{WORKSPACE_ID}}\";\ndata._projectID = \"{{PROJECT_ID}}\";\ndata._stageID = \"{{ROOT_FOLDER_ID}}\";\n\ndata.apiId = data._workspaceID + \":\" + data._projectID + \":\"+ data._stageID;\n",
+              "err_node_id": "68ffbcfbe552e81908403f2e"
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffb93db677ac4b9f3f143e"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 684,
+        "y": 260,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "693c204de552e88ac46d2af7",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "Final",
+        "description": "",
+        "x": 1268,
+        "y": 1988,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"success\"}",
+        "options": null
+      },
+      {
+        "id": "693c1e39e552e88ac46c8c74",
+        "obj_type": 3,
+        "condition": {
+          "logics": [
+            {
+              "type": "go_if_const",
+              "to_node_id": "693c1e39e552e88ac46c8c69",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "hardware",
+                  "param": "__conveyor_api_return_type_error__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go_if_const",
+              "to_node_id": "693c1e39e552e88ac46c8c6f",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "software",
+                  "param": "__conveyor_api_return_type_error__",
+                  "cast": "string"
+                },
+                {
+                  "fun": "eq",
+                  "const": "api_bad_answer",
+                  "param": "__conveyor_api_return_type_tag__",
+                  "cast": "string"
+                },
+                {
+                  "fun": "eq",
+                  "const": "no_scheme",
+                  "param": "__conveyor_api_return_description__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go_if_const",
+              "to_node_id": "693c1e39e552e88ac46c8c69",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "software",
+                  "param": "__conveyor_api_return_type_error__",
+                  "cast": "string"
+                },
+                {
+                  "fun": "eq",
+                  "const": "api_bad_answer",
+                  "param": "__conveyor_api_return_type_tag__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go",
+              "to_node_id": "693c1e39e552e88ac46c8c6f"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 1472,
+        "y": 1776,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "693c1e39e552e88ac46c8c69",
+        "obj_type": 0,
+        "condition": {
+          "logics": [],
+          "semaphors": [
+            {
+              "type": "time",
+              "value": 30,
+              "dimension": "sec",
+              "to_node_id": "693c1e39e552e88ac46c8c62"
+            }
+          ]
+        },
+        "title": "",
+        "description": "",
+        "x": 1476,
+        "y": 1588,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "693c1e39e552e88ac46c8c6f",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 1732,
+        "y": 1804,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f1449",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "type": "api",
+              "is_migrate": true,
+              "rfc_format": true,
+              "format": "raw",
+              "raw_body": "{{rsp}}",
+              "content_type": "application/json",
+              "method": "POST",
+              "url": "{{__callback_url}}",
+              "extra": {},
+              "extra_type": {},
+              "extra_headers": {
+                "Cz-Ag-Status-Code": "200",
+                "content-type": "application/json; charset=utf-8"
+              },
+              "cert_pem": "",
+              "max_threads": 5,
+              "send_sys": true,
+              "debug_info": false,
+              "err_node_id": "68ffb93db677ac4b9f3f144f",
+              "customize_response": false,
+              "response": {
+                "body": "{{body}}",
+                "header": "{{header}}"
+              },
+              "response_type": {
+                "body": "object",
+                "header": "object"
+              },
+              "version": 2
+            },
+            {
+              "type": "go",
+              "to_node_id": "693c1e2be552e88ac46c8904"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "Reply success",
+        "description": "",
+        "x": 680,
+        "y": 1224,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f144e",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "Final",
+        "description": "",
+        "x": 780,
+        "y": 2016,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"success\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f1457",
+        "obj_type": 1,
+        "condition": {
+          "logics": [
+            {
+              "type": "go",
+              "to_node_id": "68ffbcfbe552e81908403f2a"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "Start",
+        "description": "",
+        "x": 772,
+        "y": -228,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffba2db677ac4b9f3f5343",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "type": "api_code",
+              "lang": "js",
+              "src": "var rsp = JSON.parse(JSON.stringify(data));\n\n\ndelete rsp.__callback_url;\n\n\nfunction removeUnderscoreKeys(obj) {\n  for (var key in obj) {\n    if (!obj.hasOwnProperty(key)) continue;\n\n    if (key.startsWith(\"_\")) {\n      delete obj[key];\n    } else if (typeof obj[key] === \"object\" && obj[key] !== null) {\n      removeUnderscoreKeys(obj[key]);\n    }\n  }\n}\n\nremoveUnderscoreKeys(rsp);\n\nfor (let key in data.start_state) {\n  delete rsp[key];\n}\n\ndelete rsp[\"start_state\"];\ndelete data[\"start_state\"];\n\ndata[\"rsp\"] = rsp;\n\n",
+              "err_node_id": "68ffba2db677ac4b9f3f535e"
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffb93db677ac4b9f3f1449"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 680,
+        "y": 992,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f1453",
+        "obj_type": 3,
+        "condition": {
+          "logics": [
+            {
+              "type": "api",
+              "is_migrate": true,
+              "rfc_format": true,
+              "format": "",
+              "content_type": "application/json",
+              "method": "POST",
+              "url": "{{__callback_url}}",
+              "extra": {
+                "description": "{{description}}"
+              },
+              "extra_type": {
+                "description": "string"
+              },
+              "extra_headers": {
+                "Cz-Ag-Status-Code": "{{Cz-Ag-Status-Code}}",
+                "content-type": "application/json; charset=utf-8"
+              },
+              "cert_pem": "",
+              "max_threads": 5,
+              "send_sys": true,
+              "debug_info": false,
+              "err_node_id": "68ffb93db677ac4b9f3f1458",
+              "customize_response": false,
+              "response": {
+                "body": "{{body}}",
+                "header": "{{header}}"
+              },
+              "response_type": {
+                "body": "object",
+                "header": "object"
+              },
+              "version": 2
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffb93db677ac4b9f3f144a"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "Reply Error",
+        "description": "",
+        "x": 1016,
+        "y": 584,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffbcfbe552e81908403f2e",
+        "obj_type": 3,
+        "condition": {
+          "logics": [
+            {
+              "type": "go_if_const",
+              "to_node_id": "68ffbcfbe552e81908403f2b",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "hardware",
+                  "param": "__conveyor_code_return_type_error__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go_if_const",
+              "to_node_id": "68ffbcfbe552e81908403f2d",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "software",
+                  "param": "__conveyor_code_return_type_error__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffbcfbe552e81908403f2d"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 984,
+        "y": 376,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffbcfbe552e81908403f2b",
+        "obj_type": 0,
+        "condition": {
+          "logics": [],
+          "semaphors": [
+            {
+              "type": "time",
+              "value": 30,
+              "dimension": "sec",
+              "to_node_id": "68ffbcfbe552e81908403f2a"
+            }
+          ]
+        },
+        "title": "",
+        "description": "",
+        "x": 984,
+        "y": 232,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffbcfbe552e81908403f2d",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 1224,
+        "y": 384,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      },
+      {
+        "id": "68ffba2db677ac4b9f3f535e",
+        "obj_type": 3,
+        "condition": {
+          "logics": [
+            {
+              "type": "go_if_const",
+              "to_node_id": "68ffba2db677ac4b9f3f5351",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "hardware",
+                  "param": "__conveyor_code_return_type_error__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go_if_const",
+              "to_node_id": "68ffba2db677ac4b9f3f5358",
+              "conditions": [
+                {
+                  "fun": "eq",
+                  "const": "software",
+                  "param": "__conveyor_code_return_type_error__",
+                  "cast": "string"
+                }
+              ]
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffba2db677ac4b9f3f5358"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 992,
+        "y": 1120,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffba2db677ac4b9f3f5351",
+        "obj_type": 0,
+        "condition": {
+          "logics": [],
+          "semaphors": [
+            {
+              "type": "time",
+              "value": 30,
+              "dimension": "sec",
+              "to_node_id": "68ffba2db677ac4b9f3f5343"
+            }
+          ]
+        },
+        "title": "",
+        "description": "",
+        "x": 992,
+        "y": 952,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffba2db677ac4b9f3f5358",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "",
+        "description": "",
+        "x": 1168,
+        "y": 1152,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f144a",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "Final",
+        "description": "",
+        "x": 1116,
+        "y": 824,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f144f",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "Error Reply",
+        "description": "",
+        "x": 1016,
+        "y": 1316,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f143e",
+        "obj_type": 0,
+        "condition": {
+          "logics": [
+            {
+              "conv_id": "{{PROC_ID}}",
+              "type": "api_rpc",
+              "group": "all",
+              "err_node_id": "68ffb93db677ac4b9f3f1453",
+              "extra": {},
+              "extra_type": {}
+            },
+            {
+              "type": "go",
+              "to_node_id": "68ffba2db677ac4b9f3f5343"
+            }
+          ],
+          "semaphors": []
+        },
+        "title": "Call logic",
+        "description": "",
+        "x": 680,
+        "y": 580,
+        "extra": "{\"modeForm\":\"expand\",\"icon\":\"\"}",
+        "options": null
+      },
+      {
+        "id": "68ffb93db677ac4b9f3f1458",
+        "obj_type": 2,
+        "condition": {
+          "logics": [],
+          "semaphors": []
+        },
+        "title": "Error Reply",
+        "description": "",
+        "x": 1432,
+        "y": 680,
+        "extra": "{\"modeForm\":\"collapse\",\"icon\":\"error\"}",
+        "options": null
+      }
+    ],
+    "web_settings": [
+      [],
+      []
+    ]
+  }
+}
