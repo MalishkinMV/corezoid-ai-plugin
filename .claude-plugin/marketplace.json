@@ -1,0 +1,36 @@
+{
+  "name": "corezoid",
+  "metadata": {
+    "description": "Official Corezoid plugin marketplace for Claude Code. Provides workflow skills, process builder, API orchestration, and MCP integration for the Corezoid Actor Engine."
+  },
+  "owner": {
+    "name": "Corezoid Inc.",
+    "email": "support@corezoid.com"
+  },
+  "plugins": [
+    {
+      "name": "corezoid",
+      "source": "./plugins/corezoid",
+      "description": "Corezoid product knowledge, workflow skills, public docs, schemas, templates, playbooks, samples, and MCP reference data for Claude Code.",
+      "version": "1.0.2",
+      "author": {
+        "name": "Corezoid Inc.",
+        "email": "support@corezoid.com"
+      },
+      "homepage": "https://corezoid.com",
+      "repository": "https://github.com/corezoid/corezoid-codex-plugin",
+      "license": "MIT",
+      "keywords": [
+        "corezoid",
+        "actor-engine",
+        "process-engine",
+        "api-orchestration",
+        "workflow-automation",
+        "dashboards",
+        "mcp",
+        "json-schema"
+      ],
+      "category": "Developer Tools"
+    }
+  ]
+}
