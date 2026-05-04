@@ -10,7 +10,8 @@
   },
   "publicCode": {
     "githubOrg": "https://github.com/corezoid",
-    "bundledRepository": "https://github.com/corezoid/corezoid-ai-doc"
+    "bundledRepository": "https://github.com/corezoid/corezoid-ai-doc",
+    "pluginMarketplaceRepository": "https://github.com/corezoid/corezoid-codex-plugin"
   },
   "bundledSource": {
     "path": "../source/",

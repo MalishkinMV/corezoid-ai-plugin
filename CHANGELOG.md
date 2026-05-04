@@ -1,5 +1,11 @@
 # Changelog
 
+## 1.0.2
+
+- Update marketplace repository metadata for `corezoid/corezoid-codex-plugin`.
+- Replace publication placeholders with final GitHub install commands.
+- Keep upstream Corezoid AI docs repository recorded as bundled source metadata.
+
 ## 1.0.1
 
 - Package Corezoid as a Codex marketplace plugin.

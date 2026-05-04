@@ -15,4 +15,4 @@ Use this before tagging a public release.
 - [ ] `python3 scripts/validate-plugin.py` passes.
 - [ ] Codex can install the plugin from the local marketplace.
 - [ ] GitHub README install command uses the actual repository name.
-- [ ] Release tag matches plugin version, for example `v1.0.1`.
+- [ ] Release tag matches plugin version, for example `v1.0.2`.

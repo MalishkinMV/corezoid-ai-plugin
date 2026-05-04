@@ -17,7 +17,7 @@ plugins/corezoid/.mcp.json            # Empty by default; credentials are user-s
 After this repository is pushed to GitHub, users can add the marketplace with:
 
 ```bash
-codex plugin marketplace add corezoid/<repo-name> --ref main
+codex plugin marketplace add corezoid/corezoid-codex-plugin --ref main
 codex plugin marketplace upgrade corezoid
 ```
 
@@ -26,7 +26,7 @@ Then open Codex Plugin Directory, choose the **Corezoid** marketplace, and insta
 For a pinned release, use a tag:
 
 ```bash
-codex plugin marketplace add corezoid/<repo-name> --ref v1.0.1
+codex plugin marketplace add corezoid/corezoid-codex-plugin --ref v1.0.2
 ```
 
 ## Local Test

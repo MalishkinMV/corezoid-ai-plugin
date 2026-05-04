@@ -33,13 +33,13 @@ Restart Codex, open Plugin Directory, select **Corezoid**, and install the **Cor
 Create a GitHub repository under the Corezoid organization, for example:
 
 ```text
-https://github.com/corezoid/<repo-name>
+https://github.com/corezoid/corezoid-codex-plugin
 ```
 
 Push this repository:
 
 ```bash
-git remote add origin git@github.com:corezoid/<repo-name>.git
+git remote add origin git@github.com:corezoid/corezoid-codex-plugin.git
 git push -u origin main
 ```
 
@@ -48,8 +48,8 @@ git push -u origin main
 Use the plugin manifest version as the release tag:
 
 ```bash
-git tag v1.0.1
-git push origin v1.0.1
+git tag v1.0.2
+git push origin v1.0.2
 ```
 
 ## 5. Install From GitHub
@@ -57,13 +57,13 @@ git push origin v1.0.1
 For development tracking:
 
 ```bash
-codex plugin marketplace add corezoid/<repo-name> --ref main
+codex plugin marketplace add corezoid/corezoid-codex-plugin --ref main
 ```
 
 For stable installs:
 
 ```bash
-codex plugin marketplace add corezoid/<repo-name> --ref v1.0.1
+codex plugin marketplace add corezoid/corezoid-codex-plugin --ref v1.0.2
 ```
 
 Then refresh:
