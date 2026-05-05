@@ -1,6 +1,6 @@
 # Corezoid Public Product Profile
 
-This file captures the public product context used to prepare the Codex plugin card and guidance. It is intentionally concise so the plugin stays product-oriented while the full technical corpus remains bundled under `../source/`.
+This file captures the public product context used to prepare the Claude Code and Codex plugin card and guidance. It is intentionally concise so the plugin stays product-oriented while the full technical corpus remains bundled under `../source/`.
 
 ## Positioning
 

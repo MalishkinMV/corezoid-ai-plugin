@@ -1,15 +1,7 @@
 # Security
 
-The Corezoid Codex plugin intentionally ships with an empty `.mcp.json` so API credentials are never bundled in the marketplace package.
+The Corezoid AI plugin intentionally ships with an empty `plugins/corezoid/.mcp.json` so API credentials are never bundled in the marketplace package.
 
-## Credentials
+Do not commit Corezoid credentials, `.env` files, API secrets, workspace IDs tied to private environments, exported customer process data, or generated process exports containing private business logic.
 
-Do not commit Corezoid credentials, `.env` files, API secrets, workspace IDs tied to private environments, or exported customer process data.
-
-Local experiments and process exports should stay under ignored paths such as `processes/` or `.processes/`.
-
-## Reporting Issues
-
-For issues related to this plugin package, open an issue in the GitHub repository that hosts this marketplace.
-
-For Corezoid product or account security issues, use Corezoid's official support channels from https://corezoid.com.
+The bundled `plugins/corezoid/assets/source/` corpus is copied from public Corezoid documentation and examples. If you discover a secret or private artifact in this repository, open a private security issue or contact Corezoid support before creating a public report.

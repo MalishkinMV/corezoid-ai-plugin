@@ -1,15 +1,15 @@
 ---
 name: corezoid
 description: >
-  Universal Corezoid product assistant for Codex. Use when a user needs Corezoid Actor
-  Engine guidance, process architecture, process JSON, API orchestration, API Gateway,
-  dashboards, validation, debugging, public documentation, schemas, templates, samples,
-  playbooks, or help choosing one of the bundled Corezoid workflow skills.
+  Universal Corezoid product assistant for Claude Code and Codex. Use when a user needs
+  Corezoid Actor Engine guidance, process architecture, process JSON, API orchestration,
+  API Gateway, dashboards, validation, debugging, public documentation, schemas,
+  templates, samples, playbooks, or help choosing one of the bundled Corezoid workflow skills.
 ---
 
 # Corezoid
 
-This Codex plugin packages public Corezoid product knowledge and the full `corezoid/corezoid-ai-doc` technical corpus.
+This Corezoid plugin package bundles public Corezoid product knowledge and the full `corezoid/corezoid-ai-doc` technical corpus.
 
 ## Product Scope
 

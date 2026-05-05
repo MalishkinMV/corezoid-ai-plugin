@@ -11,7 +11,7 @@
   "publicCode": {
     "githubOrg": "https://github.com/corezoid",
     "bundledRepository": "https://github.com/corezoid/corezoid-ai-doc",
-    "pluginMarketplaceRepository": "https://github.com/corezoid/corezoid-codex-plugin"
+    "pluginMarketplaceRepository": "https://github.com/corezoid/corezoid-ai-plugin"
   },
   "bundledSource": {
     "path": "../source/",

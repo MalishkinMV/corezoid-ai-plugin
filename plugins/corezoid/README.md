@@ -1,12 +1,14 @@
-# Corezoid Codex Plugin
+# Corezoid AI Plugin
 
-Corezoid is a product-focused Codex plugin for working with Corezoid Actor Engine: process architecture, process JSON, API connectors, API Gateway wrappers, dashboards, reviews, updates, documentation, and public reference lookup.
+Corezoid is a shared plugin for Claude Code and Codex. It helps AI coding tools work with Corezoid Actor Engine: process architecture, process JSON, API connectors, API Gateway wrappers, dashboards, reviews, updates, documentation, and public reference lookup.
 
 ## What This Plugin Contains
 
-- `skills/` exposes focused Corezoid workflow skills for Codex.
+- `.codex-plugin/` contains the Codex plugin manifest.
+- `.claude-plugin/` contains the Claude Code plugin manifest.
+- `skills/` exposes focused Corezoid workflow skills shared by both platforms.
 - `assets/source/` contains the full public `corezoid/corezoid-ai-doc` repository, excluding only `.git` metadata.
-- `assets/public/` contains the product profile and public source links used for the marketplace-ready plugin card.
+- `assets/public/` contains the product profile and public source links used for marketplace metadata.
 - `assets/source-file-index.txt` lists every bundled upstream source file for quick lookup.
 - `.mcp.json` is intentionally empty so the plugin does not start a Corezoid MCP server without user credentials.
 
@@ -38,4 +40,4 @@ The upstream MCP server and example config are bundled at `assets/source/mcp-ser
 
 ## Marketplace Status
 
-This plugin is published by the `corezoid` marketplace as `corezoid@corezoid` with installation policy `AVAILABLE`.
+This plugin is published by the `corezoid` marketplace as `corezoid@corezoid` for both Claude Code and Codex.
