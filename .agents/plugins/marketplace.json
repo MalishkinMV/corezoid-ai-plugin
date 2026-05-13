@@ -1,5 +1,5 @@
 {
-  "name": "corezoid-ai-plugin",
+  "name": "corezoid",
   "interface": {
     "displayName": "Corezoid"
   },

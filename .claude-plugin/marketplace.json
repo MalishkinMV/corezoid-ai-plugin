@@ -1,5 +1,5 @@
 {
-  "name": "corezoid-ai-plugin",
+  "name": "corezoid",
   "metadata": {
     "description": "Official Corezoid AI plugin for Claude Code. Provides BPM process skills, MCP tools, docs, schemas, and samples for working with Corezoid processes."
   },

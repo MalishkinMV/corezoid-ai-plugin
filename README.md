@@ -25,7 +25,6 @@ The plugin bundles a Go MCP server that exposes Corezoid operations as MCP tools
   brew install golang        # macOS
   sudo apt install golang    # Ubuntu/Debian
   ```
-  Verify with `go version`.
 - A Corezoid account
 
 ## Installation
