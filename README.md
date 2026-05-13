@@ -104,8 +104,12 @@ Pull my Corezoid workspace and show me what processes are in the Payments folder
 ```
 
 ```
-Create a process that calls the Stripe API to create a checkout session,
-handles errors, and sends the result back to the caller.
+Create a process that calls any weather API, handles errors,
+and sends the forecast back to the caller.
+```
+
+```
+Create a folder named "Services" in Corezoid.
 ```
 
 ```
