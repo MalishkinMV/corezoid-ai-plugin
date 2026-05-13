@@ -14,16 +14,58 @@ You are a specialist in setting up the Corezoid working environment using the `c
 
 ## Step 1 — Call `login`
 
-Call MCP tool **`login`** — it guides the user through the full setup in sequence:
+Call MCP tool **`login`** with no arguments. It will guide setup in one of two modes depending on whether the client supports MCP elicitation.
 
-1. **API URL prompt** — interactive form asking for `COREZOID_API_URL`
+---
+
+## Mode A — Elicitation supported (interactive forms)
+
+The `login` tool handles everything automatically in sequence:
+
+1. **API URL prompt** — interactive form asking for `COREZOID_ACCOUNT_URL`
 2. **OAuth2** — browser window opens for authentication, token saved to `.env`
 3. **Workspace picker** — fetches available workspaces and shows a dropdown, saves `COREZOID_WORKSPACE_ID` to `.env`
-4. **Stage ID prompt** — interactive form asking for `COREZOID_STAGE_ID`, saved to `.env`
+4. **Stage picker** — lists projects then stages for selection, saves `COREZOID_STAGE_ID` to `.env`
 
-All values are stored in `.env` in the current working directory.
+When `login` returns "Setup complete", proceed to **Step 2**.
 
-**Do not ask the user for values through chat. Do not write to .env manually.**
+---
+
+## Mode B — Elicitation not supported (chat-based collection)
+
+When elicitation is unavailable, `login` returns instructions for each missing value. Follow this sequence:
+
+### B1 — Collect Account URL
+
+`login` returns: *"Please ask the user for their Corezoid Account API URL..."*
+
+→ Ask the user: **"What is your Corezoid Account API URL? (e.g. https://account.corezoid.com)"**
+
+→ Call `login(account_url=<value>)`
+
+The tool then opens a browser for OAuth2 authentication.
+
+### B2 — Select Workspace
+
+After OAuth, `login` returns a list of available workspaces and asks you to select one.
+
+→ Show the workspace list to the user and ask which one to use.
+
+→ Call `login(workspace_id=<selected_id>)`
+
+### B3 — Select Stage
+
+`login` returns a list of projects and asks you to select a stage.
+
+→ Show the project list to the user and ask which project they want to use.
+
+→ Call **`list-stages(project_id=<id>, company_id=<workspace_id>)`** to see available stages for that project.
+
+→ Show the stage list to the user and ask which stage (root folder) to use.
+
+→ Call `login(workspace_id=<workspace_id>, stage_id=<stage_id>)`
+
+When `login` returns "Setup complete", proceed to **Step 2**.
 
 ---
 
@@ -54,7 +96,7 @@ Then call `login` — it will skip already-set values and only prompt for what's
 
 | Variable | Set during |
 |---|---|
-| `COREZOID_API_URL` | `login` step 1 — API URL prompt |
-| `SIMULATOR_TOKEN` | `login` step 2 — OAuth2 |
-| `COREZOID_WORKSPACE_ID` | `login` step 3 — workspace picker |
-| `COREZOID_STAGE_ID` | `login` step 4 — Stage ID prompt |
+| `COREZOID_ACCOUNT_URL` | login step 1 — API URL prompt |
+| `SIMULATOR_TOKEN` | login step 2 — OAuth2 |
+| `COREZOID_WORKSPACE_ID` | login step 3 — workspace selection |
+| `COREZOID_STAGE_ID` | login step 4 — stage selection |

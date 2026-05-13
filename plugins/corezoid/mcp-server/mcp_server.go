@@ -869,6 +869,9 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 	case "login":
 		envPath := envFilePath()
 
+		// Record initial stageID to detect if it gets set during this call.
+		stageIDAtStart := stageID
+
 		// Apply any values passed directly as arguments (bypasses elicitation).
 		if v := optStrArg(args, "account_url"); v != "" && accountURL == "" {
 			accountURL = v
@@ -896,7 +899,7 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 
 		logger.Info("login: accountURL=%q workspaceID=%q stageID=%d", accountURL, workspaceID, stageID)
 
-		// Step 1: elicit Account API URL before OAuth.
+		// Step 1: ensure Account API URL.
 		if accountURL == "" {
 			if clientSupportsElicitation {
 				content, action, err := elicitValues(
@@ -919,7 +922,7 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 					accountURL = "https://account.corezoid.com"
 				} else if action != "accept" {
 					logger.Info("login: user cancelled COREZOID_ACCOUNT_URL elicitation (action=%q)", action)
-					return "Login cancelled.", false
+					return "Please ask the user for their Corezoid Account API URL (e.g. https://account.corezoid.com), then call the login tool again with account_url=<value>.", false
 				} else {
 					if v, _ := content["account_url"].(string); v != "" {
 						accountURL = v
@@ -928,7 +931,7 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 					}
 				}
 			} else {
-				accountURL = "https://account.corezoid.com"
+				return "Please ask the user for their Corezoid Account API URL (e.g. https://account.corezoid.com), then call the login tool again with account_url=<value>.", false
 			}
 			os.Setenv("COREZOID_ACCOUNT_URL", accountURL)
 			if err := updateEnvFile(envPath, "COREZOID_ACCOUNT_URL", accountURL); err != nil {
@@ -936,177 +939,233 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 			}
 		}
 
-		// Step 2: OAuth2 PKCE browser flow.
-		res, err := oauthPKCEFlow(accountURL, oauthClientID)
-		if err != nil {
-			return fmt.Sprintf("Authentication failed: %v", err), true
-		}
-		creds := &Credentials{
-			AccessToken: res.AccessToken,
-			ExpiresAt:   res.ExpiresAt,
-			TokenType:   "Simulator",
-		}
-		if saveErr := saveCredentials(creds); saveErr != nil {
-			logger.Warn("login: failed to save credentials: %v", saveErr)
-		}
-		apiToken = res.AccessToken
-
-		// Step 2.5: derive COREZOID_API_URL from the account clients endpoint.
-		if apiURL == "" {
-			corezoidURL, fetchErr := fetchCorezoidAPIURL(accountURL, res.AccessToken)
-			if fetchErr != nil {
-				logger.Warn("login: fetchCorezoidAPIURL failed: %v", fetchErr)
-			} else {
-				apiURL = corezoidURL
-				os.Setenv("COREZOID_API_URL", corezoidURL)
-				if err := updateEnvFile(envPath, "COREZOID_API_URL", corezoidURL); err != nil {
-					logger.Warn("login: could not save COREZOID_API_URL: %v", err)
-				}
-				logger.Info("login: derived COREZOID_API_URL=%q from clients API", corezoidURL)
+		// Step 2: OAuth2 PKCE browser flow (skipped if already authenticated).
+		var tokenExpiry time.Time
+		if apiToken == "" {
+			res, err := oauthPKCEFlow(accountURL, oauthClientID)
+			if err != nil {
+				return fmt.Sprintf("Authentication failed: %v", err), true
 			}
-		}
-
-		// Step 3: fetch workspace list and elicit selection.
-		if workspaceID == "" && clientSupportsElicitation {
-			workspaces, fetchErr := fetchWorkspaceList()
-			if fetchErr != nil {
-				logger.Warn("login: fetchWorkspaceList failed: %v — falling back to text input", fetchErr)
+			creds := &Credentials{
+				AccessToken: res.AccessToken,
+				ExpiresAt:   res.ExpiresAt,
+				TokenType:   "Simulator",
 			}
+			if saveErr := saveCredentials(creds); saveErr != nil {
+				logger.Warn("login: failed to save credentials: %v", saveErr)
+			}
+			apiToken = res.AccessToken
+			tokenExpiry = res.ExpiresAt
 
-			var wsSchema map[string]interface{}
-			wsIDByLabel := map[string]string{}
-
-			if fetchErr == nil && len(workspaces) > 0 {
-				enumVals := make([]string, len(workspaces))
-				for i, ws := range workspaces {
-					label := ws.companyID + " — " + ws.title
-					if ws.role != "member" {
-						label += " [" + ws.role + "]"
+			// Step 2.5: derive COREZOID_API_URL from the account clients endpoint.
+			if apiURL == "" {
+				corezoidURL, fetchErr := fetchCorezoidAPIURL(accountURL, res.AccessToken)
+				if fetchErr != nil {
+					logger.Warn("login: fetchCorezoidAPIURL failed: %v", fetchErr)
+				} else {
+					apiURL = corezoidURL
+					os.Setenv("COREZOID_API_URL", corezoidURL)
+					if err := updateEnvFile(envPath, "COREZOID_API_URL", corezoidURL); err != nil {
+						logger.Warn("login: could not save COREZOID_API_URL: %v", err)
 					}
-					enumVals[i] = label
-					wsIDByLabel[label] = ws.companyID
-				}
-				wsSchema = map[string]interface{}{
-					"type":        "string",
-					"title":       "Workspace",
-					"description": "Select the workspace you want to work with",
-					"enum":        enumVals,
-				}
-			} else {
-				wsSchema = map[string]interface{}{
-					"type":        "string",
-					"title":       "Workspace ID",
-					"description": "Your company/workspace identifier in Corezoid",
+					logger.Info("login: derived COREZOID_API_URL=%q from clients API", corezoidURL)
 				}
 			}
+		}
 
-			content, action, err := elicitValues(
-				"Select your Corezoid workspace:",
-				map[string]interface{}{
-					"type":       "object",
-					"properties": map[string]interface{}{"workspace_id": wsSchema},
-					"required":   []string{"workspace_id"},
-				},
-			)
-			if err == nil && action == "accept" {
-				if selected, _ := content["workspace_id"].(string); selected != "" {
-					id := selected
-					if raw, ok := wsIDByLabel[selected]; ok {
-						id = raw
+		// Step 3: workspace selection.
+		if workspaceID == "" {
+			if clientSupportsElicitation {
+				workspaces, fetchErr := fetchWorkspaceList()
+				if fetchErr != nil {
+					logger.Warn("login: fetchWorkspaceList failed: %v — falling back to text input", fetchErr)
+				}
+
+				var wsSchema map[string]interface{}
+				wsIDByLabel := map[string]string{}
+
+				if fetchErr == nil && len(workspaces) > 0 {
+					enumVals := make([]string, len(workspaces))
+					for i, ws := range workspaces {
+						label := ws.companyID + " — " + ws.title
+						if ws.role != "member" {
+							label += " [" + ws.role + "]"
+						}
+						enumVals[i] = label
+						wsIDByLabel[label] = ws.companyID
 					}
-					workspaceID = id
-					os.Setenv("COREZOID_WORKSPACE_ID", id)
-					if err := updateEnvFile(envPath, "COREZOID_WORKSPACE_ID", id); err != nil {
-						logger.Warn("login: could not save COREZOID_WORKSPACE_ID: %v", err)
+					wsSchema = map[string]interface{}{
+						"type":        "string",
+						"title":       "Workspace",
+						"description": "Select the workspace you want to work with",
+						"enum":        enumVals,
+					}
+				} else {
+					wsSchema = map[string]interface{}{
+						"type":        "string",
+						"title":       "Workspace ID",
+						"description": "Your company/workspace identifier in Corezoid",
 					}
 				}
-			}
-		}
 
-		// Steps 4 & 5: pick project then stage (only when elicitation is available).
-		if stageID == 0 && clientSupportsElicitation {
-			var selectedProjectID int64
-
-			// Step 4: fetch project list and elicit selection.
-			projects, projErr := fetchProjectList(workspaceID)
-			if projErr != nil {
-				logger.Warn("login: fetchProjectList failed: %v", projErr)
-			}
-
-			if projErr == nil && len(projects) > 0 {
-				enumVals := make([]string, len(projects))
-				projIDByLabel := map[string]int64{}
-				for i, p := range projects {
-					label := fmt.Sprintf("%d — %s", p.projectID, p.title)
-					if p.shortName != "" && p.shortName != p.title {
-						label += " (" + p.shortName + ")"
-					}
-					enumVals[i] = label
-					projIDByLabel[label] = p.projectID
-				}
 				content, action, err := elicitValues(
-					"Select your Corezoid project:",
+					"Select your Corezoid workspace:",
 					map[string]interface{}{
-						"type": "object",
-						"properties": map[string]interface{}{
-							"project": map[string]interface{}{
-								"type":        "string",
-								"title":       "Project",
-								"description": "Select the project to work with",
-								"enum":        enumVals,
-							},
-						},
-						"required": []string{"project"},
+						"type":       "object",
+						"properties": map[string]interface{}{"workspace_id": wsSchema},
+						"required":   []string{"workspace_id"},
 					},
 				)
 				if err == nil && action == "accept" {
-					if selected, _ := content["project"].(string); selected != "" {
-						selectedProjectID = projIDByLabel[selected]
+					if selected, _ := content["workspace_id"].(string); selected != "" {
+						id := selected
+						if raw, ok := wsIDByLabel[selected]; ok {
+							id = raw
+						}
+						workspaceID = id
+						os.Setenv("COREZOID_WORKSPACE_ID", id)
+						if err := updateEnvFile(envPath, "COREZOID_WORKSPACE_ID", id); err != nil {
+							logger.Warn("login: could not save COREZOID_WORKSPACE_ID: %v", err)
+						}
 					}
 				}
+			} else {
+				// No elicitation — fetch workspace list and return it to the LLM.
+				workspaces, fetchErr := fetchWorkspaceList()
+				var sb strings.Builder
+				sb.WriteString("Authenticated successfully.\n\nAvailable workspaces:\n")
+				if fetchErr != nil {
+					logger.Warn("login: fetchWorkspaceList failed: %v", fetchErr)
+					sb.WriteString(fmt.Sprintf("(could not fetch workspace list: %v)\n", fetchErr))
+				} else {
+					for _, ws := range workspaces {
+						label := ws.title
+						if ws.role != "member" {
+							label += " [" + ws.role + "]"
+						}
+						sb.WriteString(fmt.Sprintf("  %s — %s\n", ws.companyID, label))
+					}
+				}
+				sb.WriteString("\nPlease ask the user which workspace they want to use, then call login(workspace_id=<selected_id>).")
+				return sb.String(), false
 			}
+		}
 
-			// Step 5: fetch stage list for selected project and elicit selection.
-			if selectedProjectID != 0 {
-				stages, stagesErr := fetchStageList(workspaceID, selectedProjectID)
-				if stagesErr != nil {
-					logger.Warn("login: fetchStageList failed: %v", stagesErr)
+		// Steps 4 & 5: pick project then stage.
+		if stageID == 0 {
+			if clientSupportsElicitation {
+				var selectedProjectID int64
+
+				// Step 4: fetch project list and elicit selection.
+				projects, projErr := fetchProjectList(workspaceID)
+				if projErr != nil {
+					logger.Warn("login: fetchProjectList failed: %v", projErr)
 				}
 
-				if stagesErr == nil && len(stages) > 0 {
-					enumVals := make([]string, len(stages))
-					stageIDByLabel := map[string]int64{}
-					for i, s := range stages {
-						label := fmt.Sprintf("%d — %s", s.stageID, s.title)
-						if s.shortName != "" && s.shortName != s.title {
-							label += " (" + s.shortName + ")"
-						}
-						if s.immutable {
-							label += " [immutable]"
+				if projErr == nil && len(projects) > 0 {
+					enumVals := make([]string, len(projects))
+					projIDByLabel := map[string]int64{}
+					for i, p := range projects {
+						label := fmt.Sprintf("%d — %s", p.projectID, p.title)
+						if p.shortName != "" && p.shortName != p.title {
+							label += " (" + p.shortName + ")"
 						}
 						enumVals[i] = label
-						stageIDByLabel[label] = s.stageID
+						projIDByLabel[label] = p.projectID
 					}
 					content, action, err := elicitValues(
-						"Select your Corezoid stage (root folder for this project):",
+						"Select your Corezoid project:",
 						map[string]interface{}{
 							"type": "object",
 							"properties": map[string]interface{}{
-								"stage": map[string]interface{}{
+								"project": map[string]interface{}{
 									"type":        "string",
-									"title":       "Stage",
-									"description": "Select the stage to use as the root folder",
+									"title":       "Project",
+									"description": "Select the project to work with",
 									"enum":        enumVals,
 								},
 							},
-							"required": []string{"stage"},
+							"required": []string{"project"},
 						},
 					)
 					if err == nil && action == "accept" {
-						if selected, _ := content["stage"].(string); selected != "" {
-							if id, ok := stageIDByLabel[selected]; ok && id != 0 {
-								stageID = int(id)
-								v := strconv.FormatInt(id, 10)
+						if selected, _ := content["project"].(string); selected != "" {
+							selectedProjectID = projIDByLabel[selected]
+						}
+					}
+				}
+
+				// Step 5: fetch stage list for selected project and elicit selection.
+				if selectedProjectID != 0 {
+					stages, stagesErr := fetchStageList(workspaceID, selectedProjectID)
+					if stagesErr != nil {
+						logger.Warn("login: fetchStageList failed: %v", stagesErr)
+					}
+
+					if stagesErr == nil && len(stages) > 0 {
+						enumVals := make([]string, len(stages))
+						stageIDByLabel := map[string]int64{}
+						for i, s := range stages {
+							label := fmt.Sprintf("%d — %s", s.stageID, s.title)
+							if s.shortName != "" && s.shortName != s.title {
+								label += " (" + s.shortName + ")"
+							}
+							if s.immutable {
+								label += " [immutable]"
+							}
+							enumVals[i] = label
+							stageIDByLabel[label] = s.stageID
+						}
+						content, action, err := elicitValues(
+							"Select your Corezoid stage (root folder for this project):",
+							map[string]interface{}{
+								"type": "object",
+								"properties": map[string]interface{}{
+									"stage": map[string]interface{}{
+										"type":        "string",
+										"title":       "Stage",
+										"description": "Select the stage to use as the root folder",
+										"enum":        enumVals,
+									},
+								},
+								"required": []string{"stage"},
+							},
+						)
+						if err == nil && action == "accept" {
+							if selected, _ := content["stage"].(string); selected != "" {
+								if id, ok := stageIDByLabel[selected]; ok && id != 0 {
+									stageID = int(id)
+									v := strconv.FormatInt(id, 10)
+									os.Setenv("COREZOID_STAGE_ID", v)
+									if err := updateEnvFile(envPath, "COREZOID_STAGE_ID", v); err != nil {
+										logger.Warn("login: could not save COREZOID_STAGE_ID: %v", err)
+									}
+								}
+							}
+						}
+					}
+				}
+
+				// Fallback: if stage still not set, ask for stage ID directly.
+				if stageID == 0 {
+					content, action, err := elicitValues(
+						"Enter your Stage ID (root folder ID for this project):",
+						map[string]interface{}{
+							"type": "object",
+							"properties": map[string]interface{}{
+								"stage_id": map[string]interface{}{
+									"type":        "string",
+									"title":       "Stage ID",
+									"description": "Root folder ID for this project (numeric)",
+								},
+							},
+							"required": []string{"stage_id"},
+						},
+					)
+					if err == nil && action == "accept" {
+						if v, _ := content["stage_id"].(string); v != "" {
+							if id, err := strconv.Atoi(v); err == nil && id != 0 {
+								stageID = id
 								os.Setenv("COREZOID_STAGE_ID", v)
 								if err := updateEnvFile(envPath, "COREZOID_STAGE_ID", v); err != nil {
 									logger.Warn("login: could not save COREZOID_STAGE_ID: %v", err)
@@ -1115,49 +1174,44 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 						}
 					}
 				}
-			}
-
-			// Fallback: if stage still not set, ask for stage ID directly.
-			if stageID == 0 {
-				content, action, err := elicitValues(
-					"Enter your Stage ID (root folder ID for this project):",
-					map[string]interface{}{
-						"type": "object",
-						"properties": map[string]interface{}{
-							"stage_id": map[string]interface{}{
-								"type":        "string",
-								"title":       "Stage ID",
-								"description": "Root folder ID for this project (numeric)",
-							},
-						},
-						"required": []string{"stage_id"},
-					},
-				)
-				if err == nil && action == "accept" {
-					if v, _ := content["stage_id"].(string); v != "" {
-						if id, err := strconv.Atoi(v); err == nil && id != 0 {
-							stageID = id
-							os.Setenv("COREZOID_STAGE_ID", v)
-							if err := updateEnvFile(envPath, "COREZOID_STAGE_ID", v); err != nil {
-								logger.Warn("login: could not save COREZOID_STAGE_ID: %v", err)
-							}
-						}
+			} else {
+				// No elicitation — list projects so LLM can collect stage from user.
+				projects, projErr := fetchProjectList(workspaceID)
+				var sb strings.Builder
+				sb.WriteString(fmt.Sprintf("Workspace %s selected.\n\n", workspaceID))
+				if projErr != nil || len(projects) == 0 {
+					if projErr != nil {
+						sb.WriteString(fmt.Sprintf("Could not fetch projects: %v\n", projErr))
+					} else {
+						sb.WriteString("No projects found.\n")
 					}
+					sb.WriteString(fmt.Sprintf("Please ask the user for their COREZOID_STAGE_ID (root folder ID), then call login(workspace_id=%s, stage_id=<stage_id>).", workspaceID))
+				} else {
+					sb.WriteString("Available projects:\n")
+					for _, p := range projects {
+						line := fmt.Sprintf("  %d — %s", p.projectID, p.title)
+						if p.shortName != "" && p.shortName != p.title {
+							line += fmt.Sprintf(" (%s)", p.shortName)
+						}
+						sb.WriteString(line + "\n")
+					}
+					sb.WriteString(fmt.Sprintf("\nPlease ask the user which project to use. Call list-stages(project_id=<id>, company_id=%s) to see available stages, then ask the user to pick one and call login(workspace_id=%s, stage_id=<stage_id>).", workspaceID, workspaceID))
 				}
+				return sb.String(), false
 			}
+		}
 
-			// After interactive stage selection, automatically pull the stage folder.
-			if stageID != 0 {
-				pv := NewValidator(0)
-				if pullErr := downloadStageRecursively(pv, stageID, "."); pullErr != nil {
-					logger.Warn("login: auto pull-folder failed: %v", pullErr)
-				}
+		// Auto pull-folder if stageID was set during this login call.
+		if stageID != 0 && stageIDAtStart == 0 {
+			pv := NewValidator(0)
+			if pullErr := downloadStageRecursively(pv, stageID, "."); pullErr != nil {
+				logger.Warn("login: auto pull-folder failed: %v", pullErr)
 			}
 		}
 
 		msg := fmt.Sprintf("Setup complete! Configuration saved to %s.", envPath)
-		if !res.ExpiresAt.IsZero() {
-			msg += fmt.Sprintf(" Token expires: %s.", res.ExpiresAt.Format("2006-01-02 15:04"))
+		if !tokenExpiry.IsZero() {
+			msg += fmt.Sprintf(" Token expires: %s.", tokenExpiry.Format("2006-01-02 15:04"))
 		}
 		return msg, false
 
