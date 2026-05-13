@@ -261,22 +261,30 @@ func fetchStageList(companyID string, projectID int64) ([]stageItem, error) {
 	return result, nil
 }
 
-// ensureAuth checks that all required credentials are set.
-// Returns an error with instructions if any value is missing.
-func ensureAuth() error {
+// ensureTokenAuth checks that a valid API token is present (minimum auth for discovery tools).
+func ensureTokenAuth() error {
 	if apiToken == "" {
 		creds, err := loadCredentials()
 		if err == nil && creds != nil && !isCredentialsExpired(creds) {
 			apiToken = creds.AccessToken
 		}
 	}
+	if apiToken == "" {
+		return fmt.Errorf("[Error] Not authenticated: missing [SIMULATOR_TOKEN]. Invoke the 'corezoid-init' skill to set up credentials (use the Skill tool with skill=\"corezoid-init\").")
+	}
+	return nil
+}
+
+// ensureAuth checks that all required credentials are set.
+// Returns an error with instructions if any value is missing.
+func ensureAuth() error {
+	if err := ensureTokenAuth(); err != nil {
+		return err
+	}
 
 	var missing []string
 	if accountURL == "" {
 		missing = append(missing, "COREZOID_ACCOUNT_URL")
-	}
-	if apiToken == "" {
-		missing = append(missing, "SIMULATOR_TOKEN")
 	}
 	if workspaceID == "" {
 		missing = append(missing, "COREZOID_WORKSPACE_ID")
@@ -874,8 +882,15 @@ func runMCPServer() {
 
 func handleToolCall(name string, args map[string]interface{}) (result string, isError bool) {
 	// lint works on local files only; login/logout manage auth — skip auth check for these.
-	needsAuth := name != "lint-process" && name != "login" && name != "logout"
-	if needsAuth {
+	// Discovery tools only need a token, not a fully configured workspace/stage.
+	switch name {
+	case "lint-process", "login", "logout":
+		// no auth required
+	case "list-workspaces", "list-projects", "list-stages":
+		if err := ensureTokenAuth(); err != nil {
+			return err.Error(), true
+		}
+	default:
 		if err := ensureAuth(); err != nil {
 			return err.Error(), true
 		}
