@@ -68,8 +68,8 @@ No build step, no extra setup. The MCP server starts automatically on first use.
 ### Updating
 
 ```bash
-claude plugin update corezoid   # Claude Code
-codex plugin update corezoid    # Codex
+claude plugin update corezoid@corezoid   # Claude Code
+codex plugin update corezoid@corezoid    # Codex
 ```
 
 Restart Claude Code / Codex after updating to apply the new version.
