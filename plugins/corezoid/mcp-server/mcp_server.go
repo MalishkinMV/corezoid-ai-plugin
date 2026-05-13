@@ -261,18 +261,34 @@ func fetchStageList(companyID string, projectID int64) ([]stageItem, error) {
 	return result, nil
 }
 
-// ensureAuth checks that apiToken is set. It tries saved credentials first.
-// Returns an error with instructions if no valid token is available.
+// ensureAuth checks that all required credentials are set.
+// Returns an error with instructions if any value is missing.
 func ensureAuth() error {
-	if apiToken != "" {
-		return nil
+	if apiToken == "" {
+		creds, err := loadCredentials()
+		if err == nil && creds != nil && !isCredentialsExpired(creds) {
+			apiToken = creds.AccessToken
+		}
 	}
-	creds, err := loadCredentials()
-	if err == nil && creds != nil && !isCredentialsExpired(creds) {
-		apiToken = creds.AccessToken
-		return nil
+
+	var missing []string
+	if accountURL == "" {
+		missing = append(missing, "COREZOID_ACCOUNT_URL")
 	}
-	return fmt.Errorf("[Error] Not authenticated. Run the 'login' tool to authenticate via OAuth2, or set SIMULATOR_TOKEN environment variable")
+	if apiToken == "" {
+		missing = append(missing, "SIMULATOR_TOKEN")
+	}
+	if workspaceID == "" {
+		missing = append(missing, "COREZOID_WORKSPACE_ID")
+	}
+	if stageID == 0 {
+		missing = append(missing, "COREZOID_STAGE_ID")
+	}
+
+	if len(missing) > 0 {
+		return fmt.Errorf("[Error] Not authenticated: missing %v. Invoke the 'corezoid-init' skill to set up credentials (use the Skill tool with skill=\"corezoid-init\").", missing)
+	}
+	return nil
 }
 
 // runMCPServer starts an MCP server over stdin/stdout using newline-delimited JSON-RPC 2.0.
