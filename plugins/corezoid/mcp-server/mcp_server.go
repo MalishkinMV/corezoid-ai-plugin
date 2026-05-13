@@ -395,10 +395,6 @@ func runMCPServer() {
 										"type":        "integer",
 										"description": "Corezoid folder(stage) ID to export",
 									},
-									"path": map[string]interface{}{
-										"type":        "string",
-										"description": "Relative directory path where the folder contents will be saved. Omit to save in the current directory.",
-									},
 								},
 								"required": []string{"folder_id"},
 							},
@@ -1149,6 +1145,14 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 					}
 				}
 			}
+
+			// After interactive stage selection, automatically pull the stage folder.
+			if stageID != 0 {
+				pv := NewValidator(0)
+				if pullErr := downloadStageRecursively(pv, stageID, "."); pullErr != nil {
+					logger.Warn("login: auto pull-folder failed: %v", pullErr)
+				}
+			}
 		}
 
 		msg := fmt.Sprintf("Setup complete! Configuration saved to %s.", envPath)
@@ -1228,13 +1232,12 @@ func handleToolCall(name string, args map[string]interface{}) (result string, is
 		if err != nil {
 			return "Error: " + err.Error(), true
 		}
-		path := resolveDirPath(args, "path")
 
 		v := NewValidator(0)
-		if err := downloadStageRecursively(v, folderID, path); err != nil {
+		if err := downloadStageRecursively(v, folderID, "."); err != nil {
 			return fmt.Sprintf("Error fetching folder: %v", err), true
 		}
-		return fmt.Sprintf("Folder %d saved to %s", folderID, path), false
+		return fmt.Sprintf("Folder %d saved to current directory", folderID), false
 
 	case "create-variable":
 		rootFolderID, err := strArg(args, "stage_id")

@@ -31,7 +31,6 @@ All values are stored in `.env` in the current working directory.
 
 After `login` returns "Setup complete", call MCP tool **`pull-folder`** with:
 - `folder_id`: value of `COREZOID_STAGE_ID` (now set in `.env`)
-- `path`: `./`
 
 Do not proceed until the tool returns successfully.
 

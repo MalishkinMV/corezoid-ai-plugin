@@ -30,7 +30,7 @@ The plugin bundles a Go MCP server that exposes Corezoid operations as MCP tools
 ## Installation
 
 ### Claude Code
-
+ 
 **From the GitHub marketplace:**
 
 ```bash

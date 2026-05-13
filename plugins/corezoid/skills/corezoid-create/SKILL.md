@@ -12,10 +12,6 @@ description: >
 
 You are a specialist in creating Corezoid BPM processes using the `corezoid` MCP server.
 
-## Folder Check (MANDATORY FIRST STEP)
-
----
-
 ## Step 1: Gather Requirements
 
 Ask the user for the following before proceeding:
@@ -37,10 +33,10 @@ If any required information is missing, ask the user before proceeding.
 ## Step 2: Create the Empty Process
 
 Call MCP tool **`create-process`** with:
-- `folder_path`: the absolute path to `FOLDER_PATH`
+- `folder_path`: Relative path to the folder directory. Omit to use the current directory.
 - `process_name`: the process name
 
-This creates an empty process in Corezoid and saves the file as `<ID>_<Name>.conv.json` inside `FOLDER_PATH`. The returned file path is `PROCESS_PATH` — all subsequent steps use it.
+This creates an empty process in Corezoid and saves the file as `<ID>_<Name>.conv.json` inside `folder_path`. The returned file path is `PROCESS_PATH` — all subsequent steps use it.
 
 If the process type is **business logic** and it needs to call existing processes, find their `conv_id` values by browsing the already-exported `.conv.json` files in the project folder.
 

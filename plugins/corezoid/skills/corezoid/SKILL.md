@@ -37,6 +37,10 @@ You have access to the Corezoid API via the `corezoid` MCP server.
 | `modify-chart` | Modify an existing chart (full series required) |
 | `set-dashboard-layout` | Save chart positions on the grid (required to make charts visible) |
 
+## Environment Context
+
+**Never ask the user** which workspace, project, or stage to use. After `login`, all required context (`COREZOID_WORKSPACE_ID`, `COREZOID_STAGE_ID`, API URLs) is saved to `.env` and picked up automatically by the MCP server. If an MCP tool returns an auth or configuration error, prompt the user to run `login` — do not ask for IDs manually.
+
 ## Platform Architecture
 
 Corezoid is an event-driven BPM platform where processes are defined as directed graphs of nodes:
