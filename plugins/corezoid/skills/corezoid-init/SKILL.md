@@ -33,7 +33,7 @@ When `login` returns "Setup complete", proceed to **Step 2**.
 
 ## Mode B — Elicitation not supported (chat-based collection)
 
-When elicitation is unavailable, drive the setup yourself using explicit tool calls. Follow this sequence:
+When elicitation is unavailable, drive the setup yourself using explicit tool calls. Follow this sequence **exactly** — never pick a workspace, project, or stage on behalf of the user. Always present the full list and wait for the user's explicit choice.
 
 ### B1 — Collect Account URL
 
@@ -47,19 +47,25 @@ The tool opens a browser for OAuth2 authentication and saves the token.
 
 → Call **`list-workspaces`**
 
-→ Show the workspace list to the user and ask which one to use.
+→ Show the full workspace list to the user. **Ask the user to choose** — do not select automatically.
+
+→ Wait for the user's answer before proceeding.
 
 ### B3 — Select Project
 
-→ Call **`list-projects(company_id=<workspace_id>)`**
+→ Call **`list-projects(company_id=<workspace_id>)`** using the workspace the user chose.
 
-→ Show the project list to the user and ask which project they want to use.
+→ Show the full project list to the user. **Ask the user to choose** — do not select automatically.
+
+→ Wait for the user's answer before proceeding.
 
 ### B4 — Select Stage
 
-→ Call **`list-stages(project_id=<id>, company_id=<workspace_id>)`**
+→ Call **`list-stages(project_id=<id>, company_id=<workspace_id>)`** using the project the user chose.
 
-→ Show the stage list to the user and ask which stage (root folder) to use.
+→ Show the full stage list to the user. **Ask the user to choose** — do not select automatically.
+
+→ Wait for the user's answer before proceeding.
 
 ### B5 — Commit selection
 
