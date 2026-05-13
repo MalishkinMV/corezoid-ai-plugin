@@ -1,78 +1,137 @@
 ---
 name: corezoid
 description: >
-  Universal Corezoid product assistant for Claude Code and Codex. Use when a user needs
-  Corezoid Actor Engine guidance, process architecture, process JSON, API orchestration,
-  API Gateway, dashboards, validation, debugging, public documentation, schemas,
-  templates, samples, playbooks, or help choosing one of the bundled Corezoid workflow skills.
+  Universal Corezoid assistant. Use when the user asks anything about
+  Corezoid processes, wants to work with process JSON files, mentions process
+  nodes, MCP tools, process validation, or any Corezoid-specific task. Also
+  use when the user mentions "Corezoid", "BPM process", "conv.json",
+  "push process", "run task", or asks for general platform knowledge.
+  This skill provides deep knowledge of the platform model and guides you to
+  use the Corezoid MCP tools correctly.
 ---
 
-# Corezoid
+# Corezoid Platform Assistant
 
-This Corezoid plugin package bundles public Corezoid product knowledge and the full `corezoid/corezoid-ai-doc` technical corpus.
+You are an expert on the Corezoid platform.
+You have access to the Corezoid API via the `corezoid` MCP server.
 
-## Product Scope
+## MCP Tools Reference
 
-Use this skill as the entry point for Corezoid product work:
+| Tool | Purpose |
+|------|---------|
+| `login` | Authenticate via OAuth2 (opens browser) |
+| `logout` | Remove saved credentials |
+| `pull-folder` | Export entire stage/folder to local directory |
+| `pull-process` | Export a single process to a file |
+| `push-process` | Validate and deploy a `.conv.json` file |
+| `lint-process` | Validate process structure locally (no API needed) |
+| `run-task` | Run a task on an already-deployed process |
+| `create-process` | Create a new empty process in a folder |
+| `create-folder` | Create a new subfolder |
+| `create-alias` | Create a short alias for a process |
+| `create-variable` | Create a Corezoid environment variable |
+| `create-dashboard` | Create a new dashboard for process metrics |
+| `get-dashboard` | Get dashboard details with charts and series |
+| `add-chart` | Add a chart (column/pie/funnel/table) to a dashboard |
+| `get-chart` | Get a single chart with its series data |
+| `modify-chart` | Modify an existing chart (full series required) |
+| `set-dashboard-layout` | Save chart positions on the grid (required to make charts visible) |
 
-- Process architecture and decomposition.
-- Connector and logic process creation.
-- External API orchestration, API Gateway, webhooks, and API wrappers.
-- Process JSON validation, review, update, and debugging.
-- Process documentation and enrichment.
-- Dashboards, activity monitoring, task counters, and operational visibility.
-- Navigation across public Corezoid docs, tutorials, schemas, templates, playbooks, and samples.
+## Platform Architecture
 
-## Bundled Sources
+Corezoid is an event-driven BPM platform where processes are defined as directed graphs of nodes:
 
-The upstream technical repository is copied into this plugin at:
+```
+Workspace
+  └── Projects
+        └── Stages (Root Folder)
+              └── Folders (optional)
+                    └── Processes (.conv.json)
+                          └── Nodes (Start → Logic → End)
+                                └── Tasks (data flowing through nodes)
+```
 
-`../../assets/source/`
+**Key concepts:**
+- **Processes** — stored as `.conv.json` files, named `<ID>_<name>.conv.json`
+- **Nodes** — processing units connected via `go` transitions
+- **Tasks** — data objects that flow through process nodes
+- **Variables** — workspace-scoped constants referenced as `{{env_var[@name]}}`
 
-Public product metadata is stored at:
+## Node Types
 
-`../../assets/public/corezoid-profile.md`
+| Node | obj_type | Logic type | Purpose |
+|------|----------|------------|---------|
+| Start | 1 | `go` | Entry point |
+| Code Node | 0 | `api_code` | JS/Erlang code execution |
+| API Call | 0 | `api` | External HTTP request |
+| Call a Process | 0 | `api_rpc` | Invoke another process |
+| Set Parameters | 0 | `set_param` | Variable assignment |
+| Condition | 0 | `go_if_const` | Branching logic |
+| Reply to Process | 0 | `api_rpc_reply` | Return result to caller |
+| End / Error | 2 | _(none)_ | Terminal node |
 
-Use these paths when this skill or any bundled Corezoid skill refers to source-repo paths such as:
+## Key Validation Rules
 
-- `knowledge/`
-- `docs/`
-- `json-schema/`
-- `templates/`
-- `playbooks/`
-- `samples/`
-- `agents/`
-- `mcp-server/`
-- `convctl.sh`
+- Node IDs must be 24-character hex strings: `^[0-9a-f]{24}$`
+- Every node that can fail must have `err_node_id`
+- All constants (URLs, tokens, IDs) must use `{{env_var[@variable-name]}}` — never hardcoded
+- `extra` and `extra_type` keys must match exactly
+- Object values in `extra` must be stringified JSON strings
 
-A complete source file list is available at `../../assets/source-file-index.txt`.
+## Common Operations
 
-## Skill Map
+### Deploy a process
+```
+push-process(process_path="./folder/12345_MyProcess.conv.json")
+```
 
-Use the focused bundled skills when the user intent matches them:
+### Run a test task
+```
+run-task(process_path="./folder/12345_MyProcess.conv.json", data={"key": "value"})
+```
 
-- `corezoid-architect`: design a multi-process Corezoid system.
-- `corezoid-process-builder`: build connector or logic process JSON.
-- `corezoid-process-reviewer`: audit a process JSON before deployment.
-- `corezoid-process-updater`: modify an existing process or debug failed tasks.
-- `corezoid-process-tech-writer`: create Markdown docs and enrich process JSON.
-- `corezoid-apigw-manager`: expose a Corezoid process through API Gateway.
-- `corezoid-api-wrapper`: generate an OpenAPI spec and wrapper process.
-- `corezoid-dashboard-manager`: create monitoring dashboards and charts.
+### Validate locally without deploying
+```
+lint-process(process_path="./folder/12345_MyProcess.conv.json")
+```
 
-## Reference Order
+### Pull a process by ID
+```
+pull-process(conv_id=12345678)
+```
 
-When working from the bundled docs, prefer these sources first:
+## Specialized Skills
 
-- `../../assets/public/corezoid-profile.md` for product framing.
-- `../../assets/source/knowledge/quick-reference.md` for common API and process snippets.
-- `../../assets/source/knowledge/gotchas.md` for silent failure modes.
-- `../../assets/source/knowledge/node-types.md` for logic schemas and examples.
-- `../../assets/source/knowledge/process-schema.md` for process structure.
-- `../../assets/source/knowledge/validation-checklist.md` before deployment.
-- `../../assets/source/docs/` for full reference material.
-- `../../assets/source/templates/` and `../../assets/source/samples/` for starting JSON.
+For domain-specific workflows use the specialized skills:
+- `/corezoid-init` — setting up environment and pulling from Corezoid
+- `/corezoid-create` — creating a new process from scratch
+- `/corezoid-edit` — modifying an existing process
+- `/corezoid-review` — auditing and analyzing a single process
+- `/corezoid-project-review` — auditing an entire project or folder (cross-process analysis)
+- `/corezoid-dashboard-manager` — creating dashboards and charts for process metrics
+- `/corezoid-process-tech-writer` — documenting a process (Markdown + enriched JSON)
 
-## MCP Note
+## Reference Documents
 
-The plugin manifest points to an empty `.mcp.json` so it does not auto-start a Corezoid MCP server without user credentials. The upstream server and example config are bundled at `../../assets/source/mcp-server/` and `../../assets/source/.mcp.json.example`.
+Use the `Read` tool to load these files when you need deeper detail:
+
+| Path | When to read |
+|---|---|
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/node-structures.md` | JSON schemas for all node types (canonical reference) |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/code-node.md` | Code node details and available JS libraries |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/call-process-node.md` | Call a Process node, semaphores, cross-folder calls |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/api-call-node.md` | HTTP API call configuration |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/condition-node.md` | Condition node (branching logic) |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/reply-to-process-node.md` | Reply formats, object stringification |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/nodes/end-node.md` | End node success/error configuration |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/process/process-json-validation.md` | Validation rules and common errors |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/process/error-handling.md` | Error handling patterns |
+| `${CLAUDE_PLUGIN_ROOT}/plugins/corezoid/docs/variables-guide.md` | Variable naming rules, creation workflow, usage examples |
+
+## Tips
+
+- Always `lint-process` before `push-process` to catch errors early
+- Use `pull-folder` to sync the full stage to disk before editing
+- Node IDs are 24-char hex — generate with `crypto.randomBytes(12).toString('hex')`
+- Variables are workspace-scoped — check `_ENV_VARS_.json` before creating new ones
+- `push-process` is mandatory after any edit — changes exist only in memory until pushed

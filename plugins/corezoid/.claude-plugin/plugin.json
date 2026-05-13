@@ -1,24 +1,15 @@
 {
   "name": "corezoid",
-  "version": "1.1.0",
-  "description": "Corezoid product knowledge, workflow skills, public docs, schemas, templates, playbooks, samples, and MCP reference data for Claude Code.",
+  "version": "2.0.0",
+  "description": "Corezoid AI Documentation and Templates — skills and MCP server for working with Corezoid BPM processes.",
   "author": {
-    "name": "Corezoid Inc.",
-    "email": "support@corezoid.com"
+    "name": "Corezoid",
+    "url": "https://corezoid.com"
   },
-  "homepage": "https://corezoid.com",
+  "homepage": "https://github.com/corezoid/corezoid-ai-plugin",
   "repository": "https://github.com/corezoid/corezoid-ai-plugin",
-  "license": "MIT",
-  "keywords": [
-    "corezoid",
-    "actor-engine",
-    "process-engine",
-    "api-orchestration",
-    "workflow-automation",
-    "dashboards",
-    "mcp",
-    "json-schema"
-  ],
+  "license": "ISC",
+  "keywords": ["corezoid", "process", "bpm", "workflow", "automation", "mcp"],
   "skills": "./skills/",
   "mcpServers": "./.mcp.json"
 }

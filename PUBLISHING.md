@@ -1,103 +1,100 @@
-# Publishing Corezoid For Claude Code And Codex
+# Publishing
 
-This document describes how to publish the shared Corezoid plugin through Claude Code and Codex marketplace catalogs.
+This document describes how to publish a new version of the Corezoid AI plugin.
 
-## 1. Validate Locally
+## 1. Validate Manifests Locally
 
-Run these checks from the repository root:
+Check that all JSON manifests are well-formed:
 
 ```bash
-python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
-python3 -m json.tool plugins/corezoid/.codex-plugin/plugin.json >/dev/null
+python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
 python3 -m json.tool plugins/corezoid/.claude-plugin/plugin.json >/dev/null
+python3 -m json.tool plugins/corezoid/.codex-plugin/plugin.json >/dev/null
 python3 -m json.tool plugins/corezoid/.mcp.json >/dev/null
-python3 -m json.tool plugins/corezoid/assets/public/source-links.json >/dev/null
 ```
 
-Verify manifest paths, version sync, shared skills, and bundled source index:
+Verify version sync between manifests:
 
 ```bash
-python3 scripts/validate-plugin.py
+grep '"version"' plugins/corezoid/.claude-plugin/plugin.json \
+                 plugins/corezoid/.codex-plugin/plugin.json \
+                 .claude-plugin/marketplace.json
 ```
 
-## 2. Test In Claude Code
+All three should show the same version number.
+
+## 2. Test in Claude Code
+
+Install the plugin from the local clone:
 
 ```bash
 claude plugin marketplace add ./
 claude plugin install corezoid@corezoid
 ```
 
-Verify that the shared Corezoid skills are available as Claude Code plugin commands.
+Verify that the Corezoid skills load and the MCP server starts. Run a quick smoke test:
 
-## 3. Test In Codex
+```
+log in to Corezoid
+```
+
+## 3. Test in Codex
 
 ```bash
 codex plugin marketplace add ./
 codex plugin marketplace upgrade corezoid
 ```
 
-Restart Codex, open Plugin Directory, select **Corezoid**, and install the **Corezoid** plugin.
+Restart Codex, open Plugin Directory, select **Corezoid**, and confirm the plugin installs and the skills are available.
 
-## 4. Push To GitHub
+## 4. Update Files
 
-The public repository is:
+1. Bump the version in all three manifest files:
+   - `plugins/corezoid/.claude-plugin/plugin.json`
+   - `plugins/corezoid/.codex-plugin/plugin.json`
+   - `.claude-plugin/marketplace.json` (the `plugins[0].version` field)
+2. Add a section to `CHANGELOG.md` for the new version.
+3. Commit the changes.
 
-```text
-https://github.com/corezoid/corezoid-ai-plugin
-```
+> `package.json` version does **not** need to be bumped by hand — the GitHub Actions workflow sets it from the git tag before publishing.
 
-Use this remote:
-
-```bash
-git remote set-url origin git@github.com:corezoid/corezoid-ai-plugin.git
-git push -u origin main
-```
-
-## 5. Create A Release Tag
-
-Use the shared plugin manifest version as the release tag:
+## 5. Push to GitHub and Tag
 
 ```bash
-git tag -a v1.1.0 -m "Release Corezoid AI plugin v1.1.0"
-git push origin v1.1.0
+git push origin main
+git tag v1.x.x
+git push origin v1.x.x
 ```
 
-## 6. Install From GitHub
+The `publish-npm.yml` workflow fires automatically on any `v*` tag and publishes the package to the GitHub Package Registry under `@corezoid/corezoid-ai-plugin`.
 
-Claude Code:
+## 6. Install from GitHub
+
+**Claude Code:**
 
 ```bash
 claude plugin marketplace add corezoid/corezoid-ai-plugin
 claude plugin install corezoid@corezoid
 ```
 
-Codex stable release:
+**Codex (stable):**
 
 ```bash
-codex plugin marketplace add corezoid/corezoid-ai-plugin --ref v1.1.0
+codex plugin marketplace add corezoid/corezoid-ai-plugin --ref v1.x.x
 codex plugin marketplace upgrade corezoid
 ```
 
-Codex development tracking:
+**Codex (development tracking):**
 
 ```bash
 codex plugin marketplace add corezoid/corezoid-ai-plugin --ref main
 codex plugin marketplace upgrade corezoid
 ```
 
-## 7. Update Policy
+## 7. Notify Users
 
-When changing the plugin:
+After tagging, ask users to upgrade their local marketplace and plugin:
 
-1. Update both manifest versions: `plugins/corezoid/.codex-plugin/plugin.json` and `plugins/corezoid/.claude-plugin/plugin.json`.
-2. Update `.claude-plugin/marketplace.json` plugin version.
-3. Update `CHANGELOG.md`.
-4. Re-run `python3 scripts/validate-plugin.py`.
-5. Test local install in Claude Code and Codex when those CLIs are available.
-6. Commit, push, tag a new release, and publish release notes.
-7. Ask users to upgrade their local marketplace/plugin.
-
-## Official Directories
-
-Until each platform provides a fully self-serve official plugin directory submission flow, this public Git-backed marketplace repository is the canonical distribution path for Corezoid.
+- **Claude Code:** `claude plugin marketplace update && claude plugin upgrade corezoid@corezoid`
+- **Codex:** `codex plugin marketplace upgrade corezoid`

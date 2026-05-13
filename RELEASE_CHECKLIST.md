@@ -1,20 +1,47 @@
-# Corezoid AI Plugin Release Checklist
+# Release Checklist
 
 Use this before tagging a public release.
 
-- [ ] `.agents/plugins/marketplace.json` has `name: corezoid` and `interface.displayName: Corezoid`.
-- [ ] `.claude-plugin/marketplace.json` has `name: corezoid` and points to `./plugins/corezoid`.
-- [ ] Codex marketplace entry includes `policy.installation`, `policy.authentication`, and `category`.
-- [ ] Codex manifest version matches Claude manifest version.
-- [ ] `.claude-plugin/marketplace.json` plugin version matches both manifests.
-- [ ] Manifests have no TODO placeholders.
-- [ ] Manifest asset paths resolve and files are under `plugins/corezoid/assets/`.
-- [ ] `plugins/corezoid/.mcp.json` contains no credentials.
-- [ ] `plugins/corezoid/assets/source-metadata.json` records the bundled upstream commit.
-- [ ] `plugins/corezoid/assets/source-file-index.txt` matches bundled source files.
-- [ ] `processes/` and other local test artifacts are not tracked.
-- [ ] `python3 scripts/validate-plugin.py` passes.
-- [ ] Claude Code can install the plugin from the local marketplace when the CLI is available.
-- [ ] Codex can install the plugin from the local marketplace when the CLI is available.
-- [ ] GitHub README install commands use `corezoid/corezoid-ai-plugin`.
-- [ ] Release tag matches plugin version, for example `v1.1.0`.
+## Manifests
+
+- [ ] `plugins/corezoid/.claude-plugin/plugin.json` version is updated.
+- [ ] `plugins/corezoid/.codex-plugin/plugin.json` version matches Claude manifest.
+- [ ] `.claude-plugin/marketplace.json` `plugins[0].version` matches both manifests.
+- [ ] `.agents/plugins/marketplace.json` is present and valid JSON.
+- [ ] No TODO or placeholder values remain in any manifest.
+- [ ] Manifest asset and skill paths resolve under `plugins/corezoid/`.
+
+## MCP Server
+
+- [ ] `plugins/corezoid/.mcp.json` contains no credentials or private URLs.
+- [ ] Go source in `plugins/corezoid/mcp-server/` compiles without errors (`go build ./...`).
+
+## Content
+
+- [ ] `CHANGELOG.md` has an entry for the new version.
+- [ ] `README.md` install commands reference `corezoid/corezoid-ai-plugin`.
+- [ ] No local test processes (`*.conv.json`) or `.env` files are tracked in git.
+
+## JSON Validation
+
+All manifests parse cleanly:
+
+```bash
+python3 -m json.tool .claude-plugin/marketplace.json >/dev/null
+python3 -m json.tool .agents/plugins/marketplace.json >/dev/null
+python3 -m json.tool plugins/corezoid/.claude-plugin/plugin.json >/dev/null
+python3 -m json.tool plugins/corezoid/.codex-plugin/plugin.json >/dev/null
+python3 -m json.tool plugins/corezoid/.mcp.json >/dev/null
+```
+
+## Testing
+
+- [ ] Claude Code can install the plugin from the local clone.
+- [ ] Codex can install the plugin from the local clone.
+- [ ] MCP server starts and `login` tool responds.
+
+## Git
+
+- [ ] All changes are committed on `main` (or merged from a feature branch).
+- [ ] Release tag matches the manifest version, e.g. `v1.3.1`.
+- [ ] Tag is pushed to `origin`.

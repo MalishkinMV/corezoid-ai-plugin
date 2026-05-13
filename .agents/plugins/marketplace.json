@@ -1,5 +1,5 @@
 {
-  "name": "corezoid",
+  "name": "corezoid-ai-plugin",
   "interface": {
     "displayName": "Corezoid"
   },
@@ -14,7 +14,7 @@
         "installation": "AVAILABLE",
         "authentication": "ON_INSTALL"
       },
-      "category": "Developer Tools"
+      "category": "Productivity"
     }
   ]
 }

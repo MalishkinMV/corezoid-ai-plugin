@@ -1,12 +1,9 @@
-# Local Corezoid experiments and exports
-processes/
-.processes/
-
-# OS/editor files
+node_modules/
+package-lock.json
 .DS_Store
-.idea/
-.vscode/
-
-# Temporary files
-*.tmp
-*.log
+.envrc
+.processes
+.idea
+.vscode
+convctl
+yarn.lock

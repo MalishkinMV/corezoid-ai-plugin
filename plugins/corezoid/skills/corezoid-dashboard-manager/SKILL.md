@@ -11,11 +11,6 @@ description: >
 
 # Corezoid Dashboard Manager
 
-
-## Bundled References
-
-This Corezoid plugin package includes the upstream Corezoid AI docs repository at `../../assets/source/`. When this skill mentions paths from the original repo, resolve them under that directory unless the user has provided project-local versions. Common examples include `knowledge/`, `docs/`, `templates/`, `playbooks/`, `json-schema/`, `samples/`, `mcp-server/`, and `convctl.sh`.
-
 ## What dashboards are
 
 A Corezoid dashboard visualizes **task counters in process nodes** — it shows how many tasks
@@ -24,108 +19,112 @@ running processes, not from external databases.
 
 Key implication: processes must be deployed and have tasks flowing through them for data to appear.
 
-## Required credentials (ask if missing)
+---
 
-| Parameter | Description |
-|-----------|-------------|
-| `API_URL` | Corezoid admin URL (e.g. `https://admin.corezoid.com`) |
-| `API_TOKEN` | Personal API token |
-| `WORKSPACE_ID` | Workspace ID |
+## MCP Tools Reference
 
-All dashboard API calls go to `<API_URL>/api/2/json`.
-
-## Authentication
-
-Every API request requires HMAC-SHA1 authentication:
-- `X-API-Login` — API login
-- `X-API-Timestamp` — current GMT Unix timestamp  
-- `X-API-Sign` — HMAC-SHA1 of `timestamp + request_body` using the API secret key
+| Tool | Purpose |
+|------|---------|
+| `create-dashboard` | Create a new dashboard, returns `obj_id` (= dashboard_id) |
+| `get-dashboard` | Get dashboard details including all charts and series |
+| `add-chart` | Add a chart to a dashboard, returns `obj_id` (hex chart ID) |
+| `get-chart` | Get a single chart with its series |
+| `modify-chart` | Modify an existing chart — always provide full series array |
+| `set-dashboard-layout` | Save chart positions on the grid — **required** to make charts visible |
+| `pull-process` | Pull process JSON to find node IDs for series |
 
 ---
 
 ## Workflow: Create a dashboard with charts
 
-### Step 1 — Identify the processes and nodes to visualize
+### Step 1 — Identify the process (MANDATORY FIRST STEP)
 
-Ask the user:
-- Which process(es) do they want to monitor?
-- Which nodes in those processes represent the metrics they care about? (End nodes are best — they accumulate completed tasks)
-- What kind of visualization: comparison (column), proportions (pie), sequential drop-off (funnel), or tabular (table)?
+**Before doing anything else**, resolve the target process:
 
-Export the target process to find node IDs:
-```bash
-API_URL=<API_URL> API_TOKEN=<API_TOKEN> WORKSPACE_ID=<WORKSPACE_ID> \
-  ./convctl.sh fetch-process <PROC_ID> .processes/target_process.json
-```
+1. Check whether the user already provided a process identifier — a file path, process name, or process ID — in the current message or conversation history.
+2. If no identifier is provided, ask:
 
-Find node IDs in `scheme.nodes[].id` — note the IDs of the nodes you want to measure.
+   > "Which process(es) do you want to monitor? You can provide a file path (e.g. `123_payment.conv.json`), a process name, or a process ID."
+
+   Do **not** call any MCP tools until the user provides an identifier.
+3. If the user gave a **name or ID** (not a file path), search the local working directory for the matching `.conv.json` file using the `find` or `grep` Bash tools (the project is already pulled locally).
+4. Once the file path is known and the file exists locally, open and read it to find node IDs in `scheme.nodes[].id` — note the IDs of nodes you want to measure. End nodes are best as primary metric sources.
+
+   If the process is not available locally, fall back to:
+   ```
+   pull-process(process_id=<PROC_ID>)
+   ```
+
+5. Also clarify with the user (if not already clear):
+   - Which nodes represent the metrics they care about?
+   - What kind of visualization: comparison (column), proportions (pie), sequential drop-off (funnel), or tabular (table)?
 
 ### Step 2 — Create the dashboard
 
-```json
-{
-  "ops": [{
-    "obj": "dashboard",
-    "obj_type": "create",
-    "title": "<Dashboard Name>",
-    "description": "<Optional description>"
-  }]
-}
+```
+create-dashboard(title="Payment Monitoring", description="Real-time payment flow metrics")
 ```
 
 Note the returned `dashboard_id` — needed for adding charts.
 
 ### Step 3 — Add charts
 
-One chart per visualization. Chart types:
+One chart per visualization. The `add-chart` tool returns a hex `obj_id` for the chart — save it for `modify-chart` calls.
+
+```
+add-chart(
+  dashboard_id=<dashboard_id>,
+  name="Payment Outcomes",
+  chart_type="column",
+  series='[{"conv_id": 123456, "node_id": "507f1f77bcf86cd799439016", "title": "Success"}, {"conv_id": 123456, "node_id": "507f1f77bcf86cd799439017", "title": "Error"}]'
+)
+```
+
+Chart types:
 
 | Type | When to use |
 |------|------------|
-| `column` | Comparing values across nodes or time periods (vertical bars) |
+| `column` | Comparing values across nodes or time periods |
 | `pie` | Showing how tasks split across outcomes |
-| `funnel` | Visualizing drop-off through a sequential process flow |
+| `funnel` | Visualizing sequential drop-off through a flow |
 | `table` | Tabular display of metric values |
 
 > **Critical:** Use `column` (NOT `bar`) — `bar` is not a valid Corezoid chart type.
 
-```json
-{
-  "ops": [{
-    "obj": "chart",
-    "obj_type": "create",
-    "dashboard_id": <dashboard_id>,
-    "title": "<Chart Title>",
-    "chart_type": "column",
-    "metrics": [
-      {
-        "conv_id": <process_id>,
-        "node_id": "<node_id>",
-        "title": "<Metric Label>"
-      }
-    ]
-  }]
-}
-```
-
-Multiple metrics on one chart = multiple bars/slices for comparison.
-
 ### Step 4 — Verify series after creation
 
-After creating a chart, **always call `get`** to verify that `series` is populated. If `series` is empty, the chart will not render correctly.
+After creating a chart, call `get-chart` to verify that `series` is populated. If it's empty, use `modify-chart` to add the series.
 
-```json
-{
-  "ops": [{
-    "obj": "chart",
-    "obj_type": "show",
-    "id": <chart_id>
-  }]
-}
+```
+get-chart(chart_id=<hex_obj_id>, dashboard_id=<dashboard_id>)
 ```
 
-If `series` is empty or missing, re-create the chart with the metrics.
+If `series` is empty, call `modify-chart` with the full series array.
 
-### Step 5 — Advise on real-time mode
+### Step 5 — Save the dashboard layout (MANDATORY)
+
+**Charts are invisible until the grid layout is saved.** After all charts are created and have series, call `set-dashboard-layout`:
+
+```
+set-dashboard-layout(
+  dashboard_id=<dashboard_id>,
+  grid='[
+    {"chart_id":"<hex1>","x":0,"y":0,"width":6,"height":4},
+    {"chart_id":"<hex2>","x":6,"y":0,"width":6,"height":4},
+    {"chart_id":"<hex3>","x":0,"y":4,"width":12,"height":4}
+  ]'
+)
+```
+
+Grid layout rules:
+- Grid is **12 columns wide**
+- `x` + `width` must not exceed 12
+- Standard chart: `width: 6, height: 4` (two charts per row)
+- Wide chart: `width: 12, height: 4` (full row)
+- Charts stack vertically by incrementing `y` (use the previous row's `height` as the next `y`)
+- `chart_id` is the hex `obj_id` returned by `add-chart`
+
+### Step 6 — Advise on real-time mode
 
 Real-time mode works ONLY for these node types:
 - **End nodes** (`obj_type: 2`) — tasks that finished the process
@@ -133,70 +132,34 @@ Real-time mode works ONLY for these node types:
 - **Delay** — tasks paused for a time period
 - **Set State** — tasks in a named state
 
-If the user wants real-time monitoring, ensure the metrics point to these node types.
 Intermediate nodes (Code, API Call, Condition) pass tasks through instantly — real-time shows 0.
 
 ---
 
 ## Modifying charts — full payload required
 
-When modifying a chart, **always include `obj_type` and the full `series` array**. Partial updates are NOT supported — omitting either field returns a validation error.
+When modifying a chart, **always include the full `series` array**. Partial updates are NOT
+supported — omitting any field returns a validation error.
 
-```json
-{
-  "ops": [{
-    "obj": "chart",
-    "obj_type": "modify",
-    "id": <chart_id>,
-    "title": "<Updated Title>",
-    "chart_type": "column",
-    "series": [
-      {
-        "conv_id": <process_id>,
-        "node_id": "<node_id>",
-        "title": "<Metric Label>"
-      }
-    ]
-  }]
-}
+- `chart_id` — hex string from `add-chart` response (`obj_id`)
+- `chart_type` sets `obj_type` in the API — must be `"column"`, `"pie"`, `"funnel"`, or `"table"`
+
+```
+modify-chart(
+  chart_id="6a043a89e552e86e908941aa",
+  dashboard_id=136542,
+  name="Updated Chart Title",
+  chart_type="column",
+  series='[{"conv_id": 123456, "node_id": "507f1f77bcf86cd799439016", "title": "Success"}]'
+)
 ```
 
 ---
 
 ## Dashboard grid layout
 
-Charts are positioned on a grid. Use `width` and `height` fields (NOT `w`/`h`) for chart dimensions. Using `w`/`h` causes a validation error.
-
-```json
-{
-  "width": 6,
-  "height": 4
-}
-```
-
----
-
-## Dashboard operations reference
-
-| Goal | `obj_type` value | Required fields |
-|------|-----------------|-----------------|
-| Create dashboard | `create` | `title` |
-| Get dashboard + charts | `show` | `id` (dashboard ID) |
-| Update dashboard | `modify` | `id`, fields to change |
-| Soft delete (trash) | `delete` | `id` |
-| Restore from trash | `restore` | `id` |
-| Permanent delete | `destroy` | `id` |
-| Share with users/groups | `link` | `id`, `users`/`groups`/`api_keys` |
-
----
-
-## Drill-down (linked dashboards)
-
-For hierarchical data — when clicking a chart segment should open a more detailed view:
-1. Create the high-level dashboard first
-2. Create the detail dashboard
-3. In the chart Metrics settings, use "Add chart link" to point a metric to the detail dashboard
-4. Users can click chart segments to drill down
+Charts are positioned on a grid. Use `width` and `height` fields (NOT `w`/`h`) — using
+`w`/`h` causes a validation error. Standard sizes: `width: 6, height: 4`.
 
 ---
 
@@ -205,9 +168,9 @@ For hierarchical data — when clicking a chart segment should open a more detai
 For funnel charts, add metrics in the **same order as the process flow**:
 
 ```json
-"metrics": [
+[
   {"conv_id": 123, "node_id": "start-node-id", "title": "Started"},
-  {"conv_id": 123, "node_id": "mid-node-id", "title": "Processed"},
+  {"conv_id": 123, "node_id": "mid-node-id",   "title": "Processed"},
   {"conv_id": 123, "node_id": "final-node-id", "title": "Completed"}
 ]
 ```
@@ -218,15 +181,30 @@ The funnel visualizes drop-off from each step to the next.
 
 ## Best practices
 
-- Use **End nodes** as primary metric sources — they reliably hold completed tasks
+- Use **End nodes** as primary metric sources — they reliably accumulate completed tasks
 - For error rate charts: add both Final (success) and Error end nodes as metrics on one column chart
 - Name metrics descriptively — labels appear directly on charts
 - Create separate dashboards: one for real-time ops monitoring, one for historical reporting
 - Group all metrics from one business flow (e.g., payment processing) on a single dashboard
 - Always verify `series` after chart creation — empty series means the chart won't render
+- Always call `set-dashboard-layout` after all charts are ready — charts are invisible without it
+- For drill-down: create the high-level dashboard first, then the detail dashboard, then link charts
 
 ---
 
-## Reference
+## Dashboard operations reference
 
-Full documentation: `docs/dashboards/README.md`
+| Goal | Tool / operation |
+|------|-----------------|
+| Create dashboard | `create-dashboard` → returns `obj_id` (dashboard_id) |
+| View dashboard + charts list | `get-dashboard(dashboard_id=...)` |
+| Add chart | `add-chart` → returns `obj_id` (hex chart ID) |
+| Get chart details + series | `get-chart(chart_id=<hex>, dashboard_id=...)` |
+| Modify chart | `modify-chart(chart_id=<hex>, dashboard_id=..., ...)` |
+| **Make charts visible** | `set-dashboard-layout(dashboard_id=..., grid='[...]')` |
+| Get node IDs for series | `pull-process` → read `scheme.nodes[].id` |
+
+**ID types to remember:**
+- `dashboard_id` — integer (e.g. `136542`)
+- `chart_id` — hex string (e.g. `"6a043a89e552e86e908941aa"`)
+- `node_id` in series — 24-char hex string from `scheme.nodes[].id`

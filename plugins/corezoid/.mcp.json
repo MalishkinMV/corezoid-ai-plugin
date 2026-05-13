@@ -1,3 +1,6 @@
 {
-  "mcpServers": {}
+  "corezoid": {
+    "command": "sh",
+    "args": ["-c", "export COREZOID_WORK_DIR=\"$PWD\"; cd \"$CLAUDE_PLUGIN_ROOT/mcp-server\" && exec go run ."]
+  }
 }

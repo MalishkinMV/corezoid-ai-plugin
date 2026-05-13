@@ -3,7 +3,7 @@ name: corezoid-process-tech-writer
 description: >
   Documents a Corezoid process — produces a human-readable Markdown file AND enriches
   the process JSON with descriptions on every node and parameter. Output is designed for
-  team wikis, internal portals, and potential future product integration.
+  team wikis, internal portals, and future product integration.
   Activate whenever a user asks to document a process, write docs for a connector,
   add descriptions to a process, create documentation for a logic, describe what a
   process does, or any similar phrasing. Also activate when the user shares a process
@@ -13,14 +13,16 @@ description: >
 
 # Corezoid Process Tech Writer
 
-
-## Bundled References
-
-This Corezoid plugin package includes the upstream Corezoid AI docs repository at `../../assets/source/`. When this skill mentions paths from the original repo, resolve them under that directory unless the user has provided project-local versions. Common examples include `knowledge/`, `docs/`, `templates/`, `playbooks/`, `json-schema/`, `samples/`, `mcp-server/`, and `convctl.sh`.
-
 Always produce **two outputs** for every process:
 1. Markdown documentation file at `.processes/<name>-docs.md`
 2. Enriched process JSON (same file, `description` fields filled in) at `.processes/<name>-enriched.json`
+
+---
+
+## Step 0 — Load the process
+
+If the user provides a file path, read it directly. If they provide a process name or ID, use
+`pull-process` to fetch it first.
 
 ---
 
@@ -49,7 +51,8 @@ Walk `scheme.nodes` following `go` entries from the Start node (`obj_type: 1`):
 ### External dependencies
 - API Call nodes (`api` logic): extract `url`, `method`, `extra_headers`
 - `{{env_var[@name]}}` references: list all unique variable names used
-- Code nodes: look for referenced services or data transformations
+- Code nodes (`api_code`): look for referenced services or data transformations
+- Call Process nodes (`api_rpc`): extract `conv_id` values (called process IDs)
 
 ---
 
@@ -90,38 +93,37 @@ Use this exact structure:
 ## How to Call
 
 Example `task_data` with realistic values:
-`​`​`json
+​```json
 {
   "field_name": "example_value",
   "optional_field": 42
 }
-`​`​`
+​```
 
 ## Process Flow
 
 1. **Start** — Entry point, receives the task
-2. **<Code Node title>** — <plain English: what this step does, e.g. "Builds the request body from input parameters">
+2. **<Code Node title>** — <plain English: what this step does>
 3. **<API Call / Call Process title>** — <plain English: what is called and why>
 4. **<Reply node title>** — <what is returned on success>
 5. **Final** — Task stored, process complete
 
 <For error paths, describe them after the happy path:>
 
-**Error path (Code Node failure):** If the preparation step fails, an error reply is returned with the exception description, and the task ends at the Error node.
-
-**Error path (API failure):** If the external API returns an error or is unreachable, ...
+**Error path (Code Node failure):** If the preparation step fails, an error reply is returned
+with the exception description, and the task ends at the Error node.
 
 ## External Dependencies
 
 | Dependency | Type | Variable / URL |
 |-----------|------|----------------|
 | <service name> | HTTP API | `{{env_var[@variable-name]}}` |
+| <process name> | Corezoid process | ID: `<conv_id>` |
 
 ## Notes
 
-- <Any timeouts configured via semaphors — e.g. "API call has a 30-second timeout with automatic retry">
+- <Any timeouts configured via semaphors — e.g. "API call has a 30-second timeout">
 - <Rate limiting (max_threads setting)>
-- <Node naming deviations from Action_Object_Context convention — note as suggestions, not errors>
 - <Any other relevant technical notes>
 ```
 
@@ -129,7 +131,8 @@ Example `task_data` with realistic values:
 
 ## Output 2: Enriched process JSON
 
-Read the original process JSON, add `description` fields to every node, and write the result to `.processes/<name>-enriched.json`.
+Read the original process JSON, add `description` fields to every node, and write the result
+to `.processes/<name>-enriched.json`.
 
 ### Rules for node enrichment
 
@@ -140,7 +143,7 @@ Read the original process JSON, add `description` fields to every node, and writ
 **What NOT to change:**
 - `id`, `obj_type`, `condition`, `logics`, `semaphors` — never touch these
 - `x`, `y`, `extra`, `options` — leave as-is
-- `title` — only fill if the field is completely empty (empty string `""`)
+- `title` — only fill if the field is completely empty (`""`)
 
 **Description style:**
 - One sentence, active voice, present tense
@@ -161,4 +164,5 @@ Read the original process JSON, add `description` fields to every node, and writ
 
 ## Both files must be produced in the same response
 
-Do not produce one without the other. If the process JSON is very large, produce the Markdown first, then the enriched JSON.
+Do not produce one without the other. If the process JSON is very large, produce the Markdown
+first, then the enriched JSON.
