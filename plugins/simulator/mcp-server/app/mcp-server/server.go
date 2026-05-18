@@ -325,11 +325,17 @@ func registerOperationTools(mcpServer *server.MCPServer, operations []Operation)
 				}
 				// Extract layerId for massLink before the API call (not a real API param).
 				var massLinkLayerID string
+				var massLinkPairs [][2]string
 				if toolName == "massLink" {
 					massLinkLayerID, _ = args["layerId"].(string)
 					delete(args, "layerId")
 					if err := injectMassLinkData(ctx, args); err != nil {
 						log.Printf("Warning: massLink data injection failed: %v", err)
+					}
+					// Capture source→target pairs from the request body before execution.
+					// The API response does not reliably return edge IDs for batch creates.
+					if bodyStr, ok := args["body"].(string); ok {
+						massLinkPairs = parseMassLinkPairs(bodyStr)
 					}
 				}
 				var bodyParams map[string]interface{}
@@ -347,15 +353,10 @@ func registerOperationTools(mcpServer *server.MCPServer, operations []Operation)
 						}
 					}
 				}
-				if toolName == "massLink" && massLinkLayerID != "" && err == nil && result != nil && !result.IsError {
-					for _, c := range result.Content {
-						if tc, ok := c.(mcp.TextContent); ok {
-							edges := parseMassLinkEdges(tc.Text)
-							log.Printf("massLink: parsed %d edges for auto-placement on layer %s", len(edges), massLinkLayerID)
-							if placeErr := autoPlaceEdgesOnLayer(ctx, massLinkLayerID, edges); placeErr != nil {
-								log.Printf("Warning: autoPlaceEdgesOnLayer failed: %v", placeErr)
-							}
-						}
+				if toolName == "massLink" && massLinkLayerID != "" && len(massLinkPairs) > 0 && err == nil && result != nil && !result.IsError {
+					log.Printf("massLink: placing %d edges on layer %s", len(massLinkPairs), massLinkLayerID)
+					if placeErr := autoPlaceEdgesOnLayer(ctx, massLinkLayerID, massLinkPairs); placeErr != nil {
+						log.Printf("Warning: autoPlaceEdgesOnLayer failed: %v", placeErr)
 					}
 				}
 				return result, err
@@ -1675,9 +1676,14 @@ func injectCreateLinkData(ctx context.Context, args map[string]interface{}) erro
 }
 
 // autoPlaceEdgesOnLayer calls getLayer to build an actorId→laId map, then
-// calls manageLayer to draw each of the supplied edges as a visual element.
-// links is a slice of [edgeId, sourceActorId, targetActorId] triples.
-func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]string) error {
+// resolves edge IDs via getActorLinks, and finally calls manageLayer to draw
+// each of the supplied edges as a visual element.
+// pairs is a slice of [sourceActorId, targetActorId] taken from the massLink request body.
+func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, pairs [][2]string) error {
+	if len(pairs) == 0 {
+		return nil
+	}
+
 	// 1. Find getLayer operation
 	var getLayerOp *Operation
 	for i, op := range globalOperations {
@@ -1723,9 +1729,30 @@ func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]strin
 	for _, n := range glResp.Data.Nodes {
 		laIDMap[n.ID] = n.LaID
 	}
-	log.Printf("autoPlaceEdgesOnLayer: layer %s has %d nodes, placing %d edges", layerID, len(laIDMap), len(links))
+	log.Printf("autoPlaceEdgesOnLayer: layer %s has %d nodes, resolving %d edges", layerID, len(laIDMap), len(pairs))
 
-	// 3. Build manageLayer body — skip edges whose actors aren't on the layer
+	// 3. Collect unique source actors and fetch their edge IDs via getActorLinks.
+	type edgeKey struct{ src, tgt string }
+	edgeIDMap := make(map[edgeKey]string)
+	seen := make(map[string]bool)
+	for _, p := range pairs {
+		src := p[0]
+		if seen[src] {
+			continue
+		}
+		seen[src] = true
+		links, fetchErr := fetchActorLinks(ctx, src)
+		if fetchErr != nil {
+			log.Printf("autoPlaceEdgesOnLayer: getActorLinks(%s) failed: %v", src, fetchErr)
+			continue
+		}
+		for _, lnk := range links {
+			edgeIDMap[edgeKey{lnk[0], lnk[1]}] = lnk[2]
+		}
+	}
+
+	// 4. Build manageLayer body — skip edges whose actors aren't on the layer
+	//    or whose IDs couldn't be resolved.
 	type edgeItem struct {
 		Action string `json:"action"`
 		Data   struct {
@@ -1736,12 +1763,17 @@ func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]strin
 		} `json:"data"`
 	}
 	var items []edgeItem
-	for _, link := range links {
-		edgeID, src, tgt := link[0], link[1], link[2]
+	for _, p := range pairs {
+		src, tgt := p[0], p[1]
 		srcLaID, srcOK := laIDMap[src]
 		tgtLaID, tgtOK := laIDMap[tgt]
 		if !srcOK || !tgtOK {
-			log.Printf("autoPlaceEdgesOnLayer: skipping edge %s — source or target not on layer %s", edgeID, layerID)
+			log.Printf("autoPlaceEdgesOnLayer: skipping %s→%s — source or target not on layer %s", src, tgt, layerID)
+			continue
+		}
+		edgeID, edgeOK := edgeIDMap[edgeKey{src, tgt}]
+		if !edgeOK {
+			log.Printf("autoPlaceEdgesOnLayer: skipping %s→%s — edge not found via getActorLinks", src, tgt)
 			continue
 		}
 		item := edgeItem{Action: "create"}
@@ -1752,11 +1784,11 @@ func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]strin
 		items = append(items, item)
 	}
 	if len(items) == 0 {
-		log.Printf("autoPlaceEdgesOnLayer: all %d edges skipped (source/target actors not found on layer %s)", len(links), layerID)
+		log.Printf("autoPlaceEdgesOnLayer: no eligible edges for layer %s", layerID)
 		return nil
 	}
 
-	// 4. Find manageLayer operation
+	// 5. Find manageLayer operation
 	var manageLayerOp *Operation
 	for i, op := range globalOperations {
 		if operationToolName(op) == "manageLayer" {
@@ -1772,15 +1804,11 @@ func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]strin
 	if err != nil {
 		return err
 	}
-	// Pass body both as bodyParams (map) and via the raw "body" argument so
-	// executeOperation picks it up regardless of which path it reads.
-	var bodyParams map[string]interface{}
-	_ = json.Unmarshal(bodyBytes, &bodyParams)
 	mlReq := mcp.CallToolRequest{}
 	mlReq.Params.Arguments = map[string]interface{}{"body": string(bodyBytes)}
 	mlResult, err := executeOperation(ctx, *manageLayerOp,
 		map[string]interface{}{"layerId": layerID},
-		nil, bodyParams, mlReq)
+		nil, nil, mlReq)
 	if err != nil {
 		return fmt.Errorf("manageLayer failed: %w", err)
 	}
@@ -1791,41 +1819,74 @@ func autoPlaceEdgesOnLayer(ctx context.Context, layerID string, links [][3]strin
 			}
 		}
 	}
+	log.Printf("autoPlaceEdgesOnLayer: placed %d edges on layer %s", len(items), layerID)
 	return nil
 }
 
-// parseMassLinkEdges extracts [edgeId, source, target] triples from a massLink response.
-// The API may return a single data object or an array; both forms are handled.
-func parseMassLinkEdges(responseText string) [][3]string {
-	type linkData struct {
-		ID     string `json:"id"`
+// fetchActorLinks calls getActorLinks for the given actor and returns a slice of
+// [source, target, edgeId] triples.
+func fetchActorLinks(ctx context.Context, actorID string) ([][3]string, error) {
+	var op *Operation
+	for i, o := range globalOperations {
+		if operationToolName(o) == "getActorLinks" {
+			op = &globalOperations[i]
+			break
+		}
+	}
+	if op == nil {
+		return nil, fmt.Errorf("getActorLinks operation not found")
+	}
+
+	result, err := executeOperation(ctx, *op,
+		map[string]interface{}{"actorId": actorID},
+		nil, nil, mcp.CallToolRequest{})
+	if err != nil {
+		return nil, fmt.Errorf("getActorLinks HTTP failed: %w", err)
+	}
+	var text string
+	for _, c := range result.Content {
+		if tc, ok := c.(mcp.TextContent); ok {
+			text = tc.Text
+		}
+	}
+
+	var resp struct {
+		Data []struct {
+			ID     string `json:"id"`
+			Source string `json:"source"`
+			Target string `json:"target"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal([]byte(text), &resp); err != nil {
+		return nil, fmt.Errorf("failed to parse getActorLinks response: %w", err)
+	}
+	out := make([][3]string, 0, len(resp.Data))
+	for _, d := range resp.Data {
+		if d.ID != "" {
+			out = append(out, [3]string{d.Source, d.Target, d.ID})
+		}
+	}
+	return out, nil
+}
+
+// parseMassLinkPairs extracts [source, target] pairs from the massLink request body.
+// These are used for auto-placement on a layer after massLink executes, since the API
+// response does not reliably return the created edge IDs.
+func parseMassLinkPairs(bodyStr string) [][2]string {
+	var items []struct {
 		Source string `json:"source"`
 		Target string `json:"target"`
 	}
-
-	// Try array form: {"data": [...]}
-	var arrResp struct {
-		Data []linkData `json:"data"`
+	if err := json.Unmarshal([]byte(bodyStr), &items); err != nil {
+		return nil
 	}
-	if err := json.Unmarshal([]byte(responseText), &arrResp); err == nil && len(arrResp.Data) > 0 {
-		out := make([][3]string, 0, len(arrResp.Data))
-		for _, d := range arrResp.Data {
-			if d.ID != "" {
-				out = append(out, [3]string{d.ID, d.Source, d.Target})
-			}
+	out := make([][2]string, 0, len(items))
+	for _, item := range items {
+		if item.Source != "" && item.Target != "" {
+			out = append(out, [2]string{item.Source, item.Target})
 		}
-		return out
 	}
-
-	// Try single object form: {"data": {...}}
-	var objResp struct {
-		Data linkData `json:"data"`
-	}
-	if err := json.Unmarshal([]byte(responseText), &objResp); err == nil && objResp.Data.ID != "" {
-		return [][3]string{{objResp.Data.ID, objResp.Data.Source, objResp.Data.Target}}
-	}
-
-	return nil
+	return out
 }
 
 // injectMassLinkData ensures every element in the massLink array body has an
@@ -2507,11 +2568,15 @@ func RunCLI(swaggerSpec models.SwaggerSpec, apiCfg models.ApiConfig, toolName st
 			}
 		}
 		var massLinkLayerID2 string
+		var massLinkPairs2 [][2]string
 		if toolName == "massLink" {
 			massLinkLayerID2, _ = args["layerId"].(string)
 			delete(args, "layerId")
 			if injErr := injectMassLinkData(ctx, args); injErr != nil {
 				log.Printf("Warning: massLink data injection failed: %v", injErr)
+			}
+			if bodyStr, ok := args["body"].(string); ok {
+				massLinkPairs2 = parseMassLinkPairs(bodyStr)
 			}
 		}
 
@@ -2536,15 +2601,10 @@ func RunCLI(swaggerSpec models.SwaggerSpec, apiCfg models.ApiConfig, toolName st
 				}
 			}
 		}
-		if toolName == "massLink" && massLinkLayerID2 != "" && err == nil && result != nil && !result.IsError {
-			for _, c := range result.Content {
-				if tc, ok := c.(mcp.TextContent); ok {
-					edges := parseMassLinkEdges(tc.Text)
-					log.Printf("massLink: parsed %d edges for auto-placement on layer %s", len(edges), massLinkLayerID2)
-					if placeErr := autoPlaceEdgesOnLayer(ctx, massLinkLayerID2, edges); placeErr != nil {
-						log.Printf("Warning: autoPlaceEdgesOnLayer failed: %v", placeErr)
-					}
-				}
+		if toolName == "massLink" && massLinkLayerID2 != "" && len(massLinkPairs2) > 0 && err == nil && result != nil && !result.IsError {
+			log.Printf("massLink: placing %d edges on layer %s", len(massLinkPairs2), massLinkLayerID2)
+			if placeErr := autoPlaceEdgesOnLayer(ctx, massLinkLayerID2, massLinkPairs2); placeErr != nil {
+				log.Printf("Warning: autoPlaceEdgesOnLayer failed: %v", placeErr)
 			}
 		}
 	}
