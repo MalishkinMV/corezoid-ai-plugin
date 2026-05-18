@@ -44,6 +44,7 @@ type Property struct {
 }
 
 type Endpoint struct {
+	OperationID string              `json:"operationId,omitempty"`
 	Summary     string              `json:"summary"`
 	Description string              `json:"description"`
 	Parameters  []Parameter         `json:"parameters"`

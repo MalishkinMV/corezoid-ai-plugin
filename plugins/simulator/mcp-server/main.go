@@ -2,6 +2,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io"
 	"log"
 	"net/url"
 	"os"
@@ -11,6 +13,14 @@ import (
 	"git.corezoid.com/mw161089sar/swagger-mcp/app/models"
 	"git.corezoid.com/mw161089sar/swagger-mcp/app/swagger"
 )
+
+func setupLogging() {
+	f, err := os.OpenFile("/tmp/simulator.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return
+	}
+	log.SetOutput(io.MultiWriter(os.Stderr, f))
+}
 
 func getSseUrlAddr(sseUrl, sseAddr string) (string, string) {
 	// Only complement if one is empty; if both are set, use as-is
@@ -80,7 +90,41 @@ func loadDotEnv(path string) {
 	}
 }
 
+// runCLI loads the built-in simulator spec and executes a single tool without starting the MCP server.
+// Usage: go run . <tool-name> [key=value ...]
+// Example: go run . get-companies acc_id=123
+func runCLI(toolName string, rawArgs []string) {
+	setupLogging()
+
+	args := map[string]interface{}{}
+	for _, a := range rawArgs {
+		k, v, _ := strings.Cut(a, "=")
+		args[k] = v
+	}
+
+	data, err := getBuiltinSpec("simulator")
+	if err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+	swaggerSpec, err := swagger.LoadSwaggerFromBytes(data)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to load spec: %v\n", err)
+		os.Exit(1)
+	}
+
+	result, isError := mcpserver.RunCLI(swaggerSpec, models.ApiConfig{}, toolName, args)
+	if isError {
+		fmt.Fprintln(os.Stderr, result)
+		os.Exit(1)
+	}
+	fmt.Println(result)
+	os.Exit(0)
+}
+
 func main() {
+	setupLogging()
+
 	if workDir := os.Getenv("SIMULATOR_WORK_DIR"); workDir != "" {
 		_ = os.Chdir(workDir)
 	}
@@ -90,9 +134,15 @@ func main() {
 		loadDotEnv(cwd + "/.env")
 	}
 
+	// CLI mode: first argument is a tool name (not a flag).
+	if len(os.Args) >= 2 && !strings.HasPrefix(os.Args[1], "-") {
+		runCLI(os.Args[1], os.Args[2:])
+		return
+	}
+
 	var finalSseUrl, finalSseAddr string
 	specUrl := flag.String("specUrl", "", "URL of the Swagger JSON specification")
-	spec := flag.String("spec", "", "Built-in spec name (e.g. 'simulator')")
+	spec := flag.String("spec", "simulator", "Built-in spec name (e.g. 'simulator')")
 	sseMode := flag.Bool("sse", false, "Run in SSE mode instead of stdio mode")
 	sseAddr := flag.String("sseAddr", "", "SSE server listen address in :Port or IP:Port format")
 	sseUrl := flag.String("sseUrl", "", "Base URL for the SSE server")
@@ -112,10 +162,11 @@ func main() {
 
 	flag.Parse()
 
-	// Validate that either specUrl or spec is provided
+	// Validate that either specUrl or spec is provided (spec defaults to "simulator")
 	if *specUrl == "" && *spec == "" {
 		log.Fatal("Please provide --specUrl or --spec flag")
 	}
+
 
 	// Validate specUrl if provided
 	if *specUrl != "" {
