@@ -1134,19 +1134,19 @@ func fetchAndSaveSystemForms(ctx context.Context, accID string) error {
 	childrenOf := map[int][]SysFormItem{}
 	var roots []SysFormItem
 
-	//allowedRootTitles := map[string]bool{
-	//	"Graphs":         true,
-	//	"Layers":         true,
-	//	"FlowchartBlock": true,
-	//	"Actor":          true,
-	//	"SmartTags":      true,
-	//	"Events":         true,
-	//	"Reactions":      true,
-	//	"Dashboards":     true,
-	//	"Tags":           true,
-	//	"Snippets":       true,
-	//	"Default": true,
-	//}
+	allowedRootTitles := map[string]bool{
+		"Graphs":         true,
+		"Layers":         true,
+		"FlowchartBlock": true,
+		"Actor":          true,
+		"SmartTags":      true,
+		"Events":         true,
+		"Reactions":      true,
+		"Dashboards":     true,
+		"Tags":           true,
+		"Snippets":       true,
+		//"Default":        true,
+	}
 
 	for _, item := range apiResult.Data {
 		form := SysFormItem{
@@ -1155,9 +1155,9 @@ func fetchAndSaveSystemForms(ctx context.Context, accID string) error {
 			Description: item.Description,
 		}
 		if item.ParentID == nil {
-			//if allowedRootTitles[item.Title] {
-			roots = append(roots, form)
-			//}
+			if allowedRootTitles[item.Title] {
+				roots = append(roots, form)
+			}
 		} else {
 			childrenOf[*item.ParentID] = append(childrenOf[*item.ParentID], form)
 		}
