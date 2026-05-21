@@ -1256,16 +1256,19 @@ func fetchAndSaveSystemForms(ctx context.Context, accID string) error {
 		return fmt.Errorf("failed to write sys-forms.yaml: %w", err)
 	}
 	log.Printf("Saved %d root forms to sys-forms.yaml", len(roots))
+	setSysFormsCache(roots)
 	buildFormNameIDCache(roots)
 	return nil
 }
 
 // sysFormsCache holds the parsed sys-forms.yaml from the working directory,
 // loaded lazily on the first createActor invocation.
+// Use setSysFormsCache to update it directly (e.g. after fetchAndSaveSystemForms).
 var (
-	sysFormsCache     []SysFormItem
-	sysFormsCacheErr  error
-	sysFormsCacheOnce sync.Once
+	sysFormsCache       []SysFormItem
+	sysFormsCacheErr    error
+	sysFormsCacheLoaded bool
+	sysFormsCacheMu     sync.RWMutex
 )
 
 // formFieldsCache caches GET /forms/{formId} results for the lifetime of the server,
@@ -1300,24 +1303,50 @@ var (
 // per server lifetime. If the file does not exist, returns (nil, nil) so the
 // caller can fall through to the unmodified flow.
 func loadSysForms() ([]SysFormItem, error) {
-	sysFormsCacheOnce.Do(func() {
-		data, err := os.ReadFile("sys-forms.yaml")
-		if err != nil {
-			if os.IsNotExist(err) {
-				return
-			}
-			sysFormsCacheErr = err
-			return
+	sysFormsCacheMu.RLock()
+	if sysFormsCacheLoaded {
+		items, err := sysFormsCache, sysFormsCacheErr
+		sysFormsCacheMu.RUnlock()
+		return items, err
+	}
+	sysFormsCacheMu.RUnlock()
+
+	sysFormsCacheMu.Lock()
+	defer sysFormsCacheMu.Unlock()
+	if sysFormsCacheLoaded { // double-checked under write lock
+		return sysFormsCache, sysFormsCacheErr
+	}
+	data, err := os.ReadFile("sys-forms.yaml")
+	if err != nil {
+		if os.IsNotExist(err) {
+			sysFormsCacheLoaded = true
+			return nil, nil
 		}
-		var items []SysFormItem
-		if err := yaml.Unmarshal(data, &items); err != nil {
-			sysFormsCacheErr = fmt.Errorf("failed to parse sys-forms.yaml: %w", err)
-			return
-		}
-		sysFormsCache = items
-		buildFormNameIDCache(items)
-	})
-	return sysFormsCache, sysFormsCacheErr
+		sysFormsCacheErr = err
+		sysFormsCacheLoaded = true
+		return nil, err
+	}
+	var items []SysFormItem
+	if err := yaml.Unmarshal(data, &items); err != nil {
+		sysFormsCacheErr = fmt.Errorf("failed to parse sys-forms.yaml: %w", err)
+		sysFormsCacheLoaded = true
+		return nil, sysFormsCacheErr
+	}
+	sysFormsCache = items
+	sysFormsCacheLoaded = true
+	buildFormNameIDCache(items)
+	return sysFormsCache, nil
+}
+
+// setSysFormsCache directly replaces the in-memory sys-forms cache.
+// Called after fetchAndSaveSystemForms writes a new sys-forms.yaml so that
+// injectCreateActorData picks up the updated hierarchy without a server restart.
+func setSysFormsCache(forms []SysFormItem) {
+	sysFormsCacheMu.Lock()
+	sysFormsCache = forms
+	sysFormsCacheErr = nil
+	sysFormsCacheLoaded = true
+	sysFormsCacheMu.Unlock()
 }
 
 // buildFormNameIDCache rebuilds formNameToIDCache by traversing the SysFormItem tree.
