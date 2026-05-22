@@ -14,15 +14,14 @@ import (
 	"sync"
 	"time"
 
-	"gopkg.in/yaml.v3"
 )
 
 // PushGraphResult holds the outcome of PushGraphFile.
 type PushGraphResult struct {
-	LayerID     string
-	UpdatedYAML string
+	LayerID                                                                       string
+	UpdatedGraph                                                                  GraphFile
 	ActorsCreated, ActorsUpdated, ActorsUnchanged, ActorsDeleted, ActorsRecreated int
-	EdgesCreated, EdgesDeleted int
+	EdgesCreated, EdgesDeleted                                                    int
 }
 
 // PushGraphFile syncs a parsed graph to the simulator API without touching the
@@ -459,7 +458,7 @@ func (s *GraphSyncer) loadSysForms(ctx context.Context) ([]SysFormItem, error) {
 	}
 
 	allowedRootTitles := map[string]bool{
-		"Graphs": true, "Layers": true, "FlowchartBlock": true, "Actor": true,
+		"Graphs": true, "Layers": true, "FlowchartBlock": true, "Actor": true, "Null": true,
 	}
 	childrenOf := map[int][]SysFormItem{}
 	var roots []SysFormItem
@@ -994,11 +993,7 @@ func (s *GraphSyncer) pushGraph(ctx context.Context, graph GraphFile, layerID st
 			graph.Edges[i].Target = uuid
 		}
 	}
-	updatedYAML, err := yaml.Marshal(&graph)
-	if err != nil {
-		return result, fmt.Errorf("marshal YAML: %w", err)
-	}
-	result.UpdatedYAML = string(updatedYAML)
+	result.UpdatedGraph = graph
 
 	// Re-fetch actors to obtain laId for newly added nodes (required for edge placement).
 	updatedActors, err := s.fetchLayerActors(ctx, graph.LayerID)

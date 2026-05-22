@@ -227,7 +227,11 @@ func handlePushGraphFile(ctx context.Context, req mcp.CallToolRequest) (*mcp.Cal
 		return mcp.NewToolResultError(fmt.Sprintf("[Error] %v", syncErr)), nil
 	}
 
-	if writeErr := os.WriteFile(filePath, []byte(result.UpdatedYAML), 0644); writeErr != nil {
+	updatedYAML, marshalErr := yaml.Marshal(&result.UpdatedGraph)
+	if marshalErr != nil {
+		return mcp.NewToolResultError(fmt.Sprintf("[Error] marshal YAML: %v", marshalErr)), nil
+	}
+	if writeErr := os.WriteFile(filePath, updatedYAML, 0644); writeErr != nil {
 		return mcp.NewToolResultError(fmt.Sprintf("[Error] write YAML: %v", writeErr)), nil
 	}
 
