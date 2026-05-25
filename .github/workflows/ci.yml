@@ -1,0 +1,127 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+    branches: [main]
+
+jobs:
+  validate-manifests:
+    name: Validate JSON manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Parse JSON manifests
+        run: |
+          python3 -m json.tool .claude-plugin/marketplace.json > /dev/null
+          python3 -m json.tool .agents/plugins/marketplace.json > /dev/null
+          python3 -m json.tool plugins/corezoid/.claude-plugin/plugin.json > /dev/null
+          python3 -m json.tool plugins/corezoid/.codex-plugin/plugin.json > /dev/null
+          python3 -m json.tool plugins/corezoid/.mcp.json > /dev/null
+
+      - name: No dead plugin paths in marketplace manifests
+        run: |
+          python3 - <<'EOF'
+          import json, os, sys
+
+          errors = []
+
+          for manifest_path in [".claude-plugin/marketplace.json"]:
+              with open(manifest_path) as f:
+                  data = json.load(f)
+              for plugin in data.get("plugins", []):
+                  src = plugin.get("source")
+                  if src and not os.path.exists(src):
+                      errors.append(f"{manifest_path}: source path '{src}' does not exist")
+
+          for manifest_path in [".agents/plugins/marketplace.json"]:
+              with open(manifest_path) as f:
+                  data = json.load(f)
+              for plugin in data.get("plugins", []):
+                  src = plugin.get("source", {}).get("path")
+                  if src and not os.path.exists(src):
+                      errors.append(f"{manifest_path}: source path '{src}' does not exist")
+
+          if errors:
+              for e in errors:
+                  print("ERROR:", e)
+              sys.exit(1)
+
+          print("All marketplace paths resolve.")
+          EOF
+
+      - name: Version sync across manifests
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+
+          with open("plugins/corezoid/.claude-plugin/plugin.json") as f:
+              claude_ver = json.load(f)["version"]
+          with open("plugins/corezoid/.codex-plugin/plugin.json") as f:
+              codex_ver = json.load(f)["version"]
+          with open(".claude-plugin/marketplace.json") as f:
+              market_ver = json.load(f)["plugins"][0]["version"]
+
+          versions = {"claude plugin.json": claude_ver, "codex plugin.json": codex_ver, "marketplace.json": market_ver}
+          print("Versions found:", versions)
+
+          if len(set(versions.values())) > 1:
+              print("ERROR: version mismatch across manifests")
+              sys.exit(1)
+
+          print("All versions match:", claude_ver)
+          EOF
+
+      - name: License consistency
+        run: |
+          python3 - <<'EOF'
+          import json, sys
+
+          manifests = [
+              "plugins/corezoid/.claude-plugin/plugin.json",
+              "plugins/corezoid/.codex-plugin/plugin.json",
+          ]
+          expected = "MIT"
+          errors = []
+          for path in manifests:
+              with open(path) as f:
+                  lic = json.load(f).get("license")
+              if lic != expected:
+                  errors.append(f"{path}: license is '{lic}', expected '{expected}'")
+          if errors:
+              for e in errors:
+                  print("ERROR:", e)
+              sys.exit(1)
+          print("License OK:", expected)
+          EOF
+
+      - name: No tracked .env or credential files
+        run: |
+          if git ls-files | grep -E '\.env$|credentials\.(json|yaml|yml)$'; then
+            echo "ERROR: sensitive files are tracked in git"
+            exit 1
+          fi
+          echo "No sensitive files tracked."
+
+  mcp-server:
+    name: MCP server build & test
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: plugins/corezoid/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: plugins/corezoid/mcp-server/go.mod
+          cache: true
+
+      - name: Build
+        run: go build ./...
+
+      - name: Test
+        run: go test ./...
