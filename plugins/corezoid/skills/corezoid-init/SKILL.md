@@ -135,8 +135,8 @@ The Go MCP server reads `.env` from `COREZOID_WORK_DIR` — the directory where 
 ⚠️ `COREZOID_API_URL` must be the **base URL only** — no path suffix:
 
 ```
-✅ COREZOID_API_URL=https://corezoid-dev.dcb.kg
-❌ COREZOID_API_URL=https://corezoid-dev.dcb.kg/api/2/json
+✅ COREZOID_API_URL=https://your-corezoid-host.example.com
+❌ COREZOID_API_URL=https://your-corezoid-host.example.com/api/2/json
 ```
 
 The server appends `/api/2/json` or `/api/2/download` automatically.
