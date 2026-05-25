@@ -1,0 +1,18 @@
+Lint results for: Valid Process
+Total nodes: 2
+
+=== JSON SCHEMA VALIDATION FAILED ===
+  JSON schema validation failed:
+valid_process.json invalid
+[
+  {
+    instancePath: '',
+    schemaPath: '#/required',
+    keyword: 'required',
+    params: { missingProperty: 'status' },
+    message: "must have required property 'status'"
+  }
+]
+
+
+Total issues: 1

@@ -1,0 +1,21 @@
+Lint results for: Orphaned Node Process
+Total nodes: 3
+
+=== JSON SCHEMA VALIDATION FAILED ===
+  JSON schema validation failed:
+orphaned_node.json invalid
+[
+  {
+    instancePath: '',
+    schemaPath: '#/required',
+    keyword: 'required',
+    params: { missingProperty: 'status' },
+    message: "must have required property 'status'"
+  }
+]
+
+
+=== ORPHANED NODES (1 / 2 reachable from Start) ===
+  [aabbccddeeff00112233aa03] Orphaned  (type: standard)
+
+Total issues: 2
