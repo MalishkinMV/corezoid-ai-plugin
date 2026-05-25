@@ -28,7 +28,6 @@ The plugin bundles a Go MCP server that exposes Corezoid operations as MCP tools
   sudo apt install golang    # Ubuntu/Debian
   ```
 - A Corezoid account
-- (Optional) [ajv-cli](https://www.npmjs.com/package/ajv-cli) for JSON Schema validation in `lint-process`: `npm install -g ajv-cli`. Without it, structural lint checks still run; only schema validation is skipped.
 
 ## Installation
 
@@ -263,7 +262,6 @@ See [docs/Troubleshooting.md](docs/Troubleshooting.md) for solutions to common p
 | macOS             | 13 Ventura and later          | Tested on arm64 and amd64 |
 | Linux             | Ubuntu 22.04+, Debian 12+     | amd64 tested in CI |
 | Windows           | not tested                    | Likely works; PRs welcome |
-| ajv-cli (optional) | ≥ 8.x                        | JSON Schema validation in `lint-process` |
 
 > **Note:** If your Go installation is older than 1.24, the toolchain manager will try to download `go1.24.0` from `proxy.golang.org`. In air-gapped environments set `GOTOOLCHAIN=local` and install Go 1.24+ manually. See [Troubleshooting](docs/Troubleshooting.md) for details.
 

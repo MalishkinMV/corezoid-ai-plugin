@@ -3,17 +3,16 @@ Total nodes: 3
 
 === JSON SCHEMA VALIDATION FAILED ===
   JSON schema validation failed:
-noop_condition.json invalid
-[
-  {
-    instancePath: '',
-    schemaPath: '#/required',
-    keyword: 'required',
-    params: { missingProperty: 'status' },
-    message: "must have required property 'status'"
-  }
-]
-
+jsonschema validation failed with 'mem:///combined.json#'
+- at '': validation failed
+  - at '': missing properties 'status', 'params', 'ref_mask', 'conv_type'
+  - at '/scheme': validation failed
+    - at '/scheme': missing property 'web_settings'
+    - at '/scheme/nodes/1/condition': validation failed
+      - at '/scheme/nodes/1/condition/logics/0': 'allOf' failed
+        - at '/scheme/nodes/1/condition/logics/0': missing property 'conditions'
+      - at '/scheme/nodes/1/condition/logics/1': 'allOf' failed
+        - at '/scheme/nodes/1/condition/logics/1': missing property 'conditions'
 
 === NOOP CONDITIONS (1) ===
   [ccddaabbccddeeff00112202] NoopCheck
