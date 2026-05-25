@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"os"
 	"os/exec"
@@ -154,9 +153,10 @@ func main() {
 	}
 
 	// MCP server mode — configure debug log file so all output avoids stdout.
-	err := os.Setenv("COREZOID_DEBUG_LOG", "/tmp/corezoid.log")
-	if err != nil {
-		log.Fatal(err)
+	// Respect COREZOID_DEBUG_LOG if the user has already set it; otherwise fall
+	// back to /tmp/corezoid.log so debug output never leaks onto MCP stdout.
+	if os.Getenv("COREZOID_DEBUG_LOG") == "" {
+		os.Setenv("COREZOID_DEBUG_LOG", "/tmp/corezoid.log") //nolint:errcheck
 	}
 	if logPath := os.Getenv("COREZOID_DEBUG_LOG"); logPath != "" {
 		f, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0644)

@@ -251,6 +251,20 @@ See [docs/Troubleshooting.md](docs/Troubleshooting.md) for solutions to common p
 - MCP server startup failures
 - Common Corezoid API error codes
 
+## Compatibility
+
+| Component         | Supported versions            | Notes |
+|-------------------|-------------------------------|-------|
+| Claude Code       | ≥ 1.x                         | MCP protocol 2025-03-26 |
+| Codex             | current stable                | Same MCP server, same skills |
+| Go toolchain      | 1.24.x – 1.24+                | Required to run the MCP server via `go run` |
+| macOS             | 13 Ventura and later          | Tested on arm64 and amd64 |
+| Linux             | Ubuntu 22.04+, Debian 12+     | amd64 tested in CI |
+| Windows           | not tested                    | Likely works; PRs welcome |
+| ajv-cli (optional) | ≥ 8.x                        | JSON Schema validation in `lint-process` |
+
+> **Note:** If your Go installation is older than 1.24, the toolchain manager will try to download `go1.24.0` from `proxy.golang.org`. In air-gapped environments set `GOTOOLCHAIN=local` and install Go 1.24+ manually. See [Troubleshooting](docs/Troubleshooting.md) for details.
+
 ## Links
 
 - [Corezoid](https://corezoid.com)

@@ -117,6 +117,22 @@ The default task timeout is determined by the process configuration in Corezoid.
 
 ---
 
+### Go toolchain auto-download hangs or fails
+
+The `go.mod` specifies `go 1.24.0`. If your local Go installation is older, the Go toolchain manager will attempt to download `go1.24.0` from `proxy.golang.org` automatically. This can fail in air-gapped environments or stall on slow networks.
+
+**Fix:** Install Go 1.24+ directly from [go.dev/dl](https://go.dev/dl/) and make sure `go version` reports `go1.24.x` or later.
+
+To suppress automatic toolchain downloads entirely, set:
+
+```bash
+export GOTOOLCHAIN=local
+```
+
+With `GOTOOLCHAIN=local`, Go will use whatever version is installed and refuse to auto-download a newer one. The MCP server is compatible with any Go 1.24.x release.
+
+---
+
 ### How to enable debug logs
 
 The MCP server always writes debug output to `/tmp/corezoid.log` when running in MCP mode. In CLI mode, set `COREZOID_DEBUG=1`:
