@@ -3,7 +3,7 @@ package-lock.json
 .DS_Store
 .envrc
 .processes
-.idea
+.idea/
 .vscode
 convctl
 yarn.lock

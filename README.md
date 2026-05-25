@@ -20,7 +20,7 @@ The plugin bundles a Go MCP server that exposes Corezoid operations as MCP tools
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) or [Codex](https://codex.openai.com) installed
-- [Go 1.21+](https://go.dev/dl/) available in `PATH` (the MCP server runs via `go run`, no build step needed)
+- [Go 1.24+](https://go.dev/dl/) available in `PATH` (the MCP server runs via `go run`, no build step needed)
   ```bash
   brew install golang        # macOS
   sudo apt install golang    # Ubuntu/Debian
@@ -231,4 +231,4 @@ corezoid-ai-plugin/
 
 ## License
 
-ISC
+MIT
