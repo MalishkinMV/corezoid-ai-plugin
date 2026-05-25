@@ -1,5 +1,7 @@
 # Corezoid — Claude Code & Codex Plugin
 
+> **Status:** stable — released, actively maintained. Supported clients: Claude Code ≥ 1.x, Codex. Go 1.24+ required. macOS and Linux tested.
+
 A plugin for [Claude Code](https://claude.ai/code) and [Codex](https://codex.openai.com) that connects the [Corezoid](https://corezoid.com) BPM platform to Claude via MCP. Claude gets direct access to Corezoid processes and deep platform knowledge to create, edit, review, and deploy workflows through natural conversation.
 
 ## What it does
@@ -224,10 +226,35 @@ corezoid-ai-plugin/
 │   └── samples/                 # Example .conv.json processes
 ```
 
+## Debugging
+
+The MCP server always writes debug output to `/tmp/corezoid.log` when running in MCP mode. View it with:
+
+```bash
+tail -f /tmp/corezoid.log
+```
+
+In CLI mode, enable verbose output with:
+
+```bash
+COREZOID_DEBUG=1 go run . pull-process process_id=123
+```
+
+## Troubleshooting
+
+See [docs/Troubleshooting.md](docs/Troubleshooting.md) for solutions to common problems:
+
+- Browser did not open during `login`
+- Expired or missing `ACCESS_TOKEN`
+- `push-process` validation errors
+- MCP server startup failures
+- Common Corezoid API error codes
+
 ## Links
 
 - [Corezoid](https://corezoid.com)
 - [Claude Code](https://claude.ai/code)
+- [Changelog](CHANGELOG.md)
 
 ## License
 
