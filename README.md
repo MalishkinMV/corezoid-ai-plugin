@@ -88,7 +88,13 @@ log in to Corezoid
 
 ### Static token (optional)
 
-If you prefer to manage the token yourself, write it to `~/.corezoid/credentials` or export it as an environment variable before starting Claude Code or Codex:
+If you prefer to manage the token yourself, write it to `~/.corezoid/credentials`:
+
+```
+ACCESS_TOKEN=your_token_here
+```
+
+Or export it as an environment variable before starting Claude Code or Codex:
 
 ```bash
 export ACCESS_TOKEN=your_token_here

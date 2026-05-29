@@ -17,7 +17,7 @@ https://account.corezoid.com/oauth2/authorize?...
 
 Copy that URL into a browser manually to complete the OAuth flow.
 
-**Headless / remote environments:** Set `ACCESS_TOKEN` directly in your project `.env` file:
+**Headless / remote environments:** Write `ACCESS_TOKEN` to `~/.corezoid/credentials`:
 
 ```
 ACCESS_TOKEN=<your-token>
@@ -27,12 +27,12 @@ ACCESS_TOKEN=<your-token>
 
 ### `ACCESS_TOKEN` expired
 
-The token's expiry is stored in `.env` as `ACCESS_TOKEN_EXPIRES_AT`. If the server reports an expired token, run the `login` MCP tool again or update `ACCESS_TOKEN` in `.env`.
+The token's expiry is stored in `~/.corezoid/credentials` as `ACCESS_TOKEN_EXPIRES_AT`. If the server reports an expired token, run the `login` MCP tool again — it will overwrite the stale token automatically.
 
 To check expiry:
 
 ```bash
-grep ACCESS_TOKEN_EXPIRES_AT .env
+grep ACCESS_TOKEN_EXPIRES_AT ~/.corezoid/credentials
 ```
 
 ---
@@ -43,11 +43,18 @@ The OAuth callback server picks a random free port automatically. If it still fa
 
 ---
 
-### No `.env` file found / credentials not loaded
+### Credentials not loaded
 
-The server walks up the directory tree from `$COREZOID_WORK_DIR` (or the current directory) looking for `.env`, stopping at the project root (directory containing a `*stage.json` file).
+The MCP server loads credentials and config from two places:
 
-Make sure you are running Claude Code from inside a pulled Corezoid workspace, or set all required variables explicitly:
+| File | Contents |
+|------|----------|
+| `~/.corezoid/credentials` | `ACCESS_TOKEN`, `ACCESS_TOKEN_EXPIRES_AT` |
+| `<project>/.env` | `WORKSPACE_ID`, `COREZOID_STAGE_ID`, `COREZOID_API_URL`, etc. |
+
+The project `.env` is found by walking up from `$COREZOID_WORK_DIR` (the directory where Claude Code was opened), stopping at the project root (directory containing a `*stage.json` file). Make sure you are running Claude Code from inside a pulled Corezoid workspace.
+
+To set variables explicitly without a file:
 
 ```bash
 export ACCESS_TOKEN=...
@@ -127,7 +134,7 @@ COREZOID_DEBUG=1 go run . pull-process process_id=123
 
 ### MCP tool returns "Not authenticated"
 
-Either `ACCESS_TOKEN` is absent from `.env`, or the token was not loaded because the server started before `.env` was created. Either restart the MCP server or run the `login` tool to authenticate.
+Either `ACCESS_TOKEN` is absent from `~/.corezoid/credentials`, or the token was not loaded because the server started before the credentials file existed. Restart the MCP server or run the `login` tool to authenticate.
 
 ---
 
@@ -158,8 +165,13 @@ Stages are attached to a specific workspace. Confirm `WORKSPACE_ID` is set corre
 
 ## Where credentials are stored
 
-Credentials are stored **project-locally** in `.env` in your workspace directory — never in `~/.corezoid` or any global location. The file is mode `0600` (owner read/write only).
+Credentials are split across two files:
 
-`ACCESS_TOKEN` and `ACCESS_TOKEN_EXPIRES_AT` are the only credential keys written.
+| File | Permissions | Contents |
+|------|-------------|----------|
+| `~/.corezoid/credentials` | `0600`, dir `0700` | `ACCESS_TOKEN`, `ACCESS_TOKEN_EXPIRES_AT` — shared across all projects |
+| `<project>/.env` | `0600` | `WORKSPACE_ID`, `COREZOID_STAGE_ID`, `COREZOID_API_URL` — project-specific |
 
-To fully log out and remove stored credentials, run the `logout` MCP tool or delete the relevant lines from `.env` manually.
+The token file lives outside the project tree so it can never be accidentally committed to git. The project `.env` contains no secrets and can be shared within a team.
+
+To fully log out and remove the stored token, run the `logout` MCP tool. It removes `ACCESS_TOKEN` and `ACCESS_TOKEN_EXPIRES_AT` from `~/.corezoid/credentials`.
