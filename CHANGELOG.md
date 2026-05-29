@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.3.7]
+
+- Feat: `--version` flag injected at build time via ldflags; defaults to `"dev"` for local builds.
+- CI: validate `run.sh` syntax with `sh -n` on every push/PR; run `go run . --version` as a smoke test after build.
+- Security: GitHub Artifact Attestations (`actions/attest-build-provenance`) for all release binaries, providing verifiable supply-chain provenance beyond SHA256 checksums.
+
 ## [2.3.6]
 
 - Feat: prebuilt MCP server binaries (darwin/linux × amd64/arm64) distributed via GitHub Releases; run.sh downloads and caches the binary on first start, falls back to `go run .` when unavailable.
