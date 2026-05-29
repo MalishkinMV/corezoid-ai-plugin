@@ -1,7 +1,17 @@
 #!/bin/sh
 # Start MCP server: use cached prebuilt binary from GitHub Releases, fall back to go run .
+# Set COREZOID_MCP_DEV=1 to skip cache and always compile from source.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+
+if [ -n "$COREZOID_MCP_DEV" ]; then
+  cd "$SCRIPT_DIR" && exec go run . "$@"
+fi
+
+# Prefer a locally built binary (gitignored) — lets developers test source changes instantly.
+if [ -x "$SCRIPT_DIR/convctl" ]; then
+  exec "$SCRIPT_DIR/convctl" "$@"
+fi
 
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)

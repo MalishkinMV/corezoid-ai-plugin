@@ -10,3 +10,4 @@ yarn.lock
 /plugins/simulator/mcp-server/info
 .env
 coverage.out
+/.mcp.json

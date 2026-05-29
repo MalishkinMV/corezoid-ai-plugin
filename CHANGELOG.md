@@ -1,5 +1,12 @@
 # Changelog
 
+## [2.3.8]
+
+- Docs: remove Go requirement from README — prebuilt binary is the only supported install path; Go fallback remains silent for developers.
+- Docs: add telemetry disclosure block in the Installation section with opt-out example (`COREZOID_ANALYTICS_DISABLED=1`).
+- Feat: run.sh — add `COREZOID_MCP_DEV=1` override and prefer local `./convctl` binary for developer workflows.
+- Fix: gitignore `.mcp.json` to prevent local MCP config from being committed.
+
 ## [2.3.7]
 
 - Feat: `--version` flag injected at build time via ldflags; defaults to `"dev"` for local builds.

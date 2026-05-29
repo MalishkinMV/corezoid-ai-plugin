@@ -29,13 +29,6 @@ workflows through natural conversation.
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) or [Codex](https://openai.com/codex) installed
-- [Go 1.24+](https://go.dev/dl/) available in `PATH` — required only as a fallback if no prebuilt binary
-  is available for your platform (the MCP server downloads a prebuilt binary on first run; `go run` is
-  used automatically when no binary exists)
-  ```bash
-  brew install golang        # macOS
-  sudo apt install golang    # Ubuntu/Debian
-  ```
 - A Corezoid account
 
 ## Installation
@@ -75,6 +68,11 @@ codex plugin install corezoid@corezoid
 ```
 
 No build step, no extra setup. The MCP server starts automatically on first use.
+
+> **Telemetry:** the plugin collects anonymous usage data (tool name, duration, error type, transport version) to improve reliability. No tokens, workspace IDs, or process content are ever sent. To opt out:
+> ```bash
+> export COREZOID_ANALYTICS_DISABLED=1   # add to ~/.zshrc or ~/.bashrc to persist
+> ```
 
 ### Updating
 
@@ -215,7 +213,7 @@ validation errors, and summarize what each process does.
 
 ```
 Claude Code / Codex
-  └── corezoid MCP server (prebuilt binary, or go run . as fallback)
+  └── corezoid MCP server (prebuilt binary)
         ├── Auth          login, logout
         ├── Workspace     list-workspaces, list-stages, list-projects
         ├── Processes     pull-process, pull-folder, push-process, lint-process
@@ -241,7 +239,7 @@ corezoid-ai-plugin/
 │   ├── .codex-plugin/
 │   │   └── plugin.json          # Codex plugin manifest
 │   ├── .mcp.json                # MCP server configuration
-│   ├── mcp-server/              # Go MCP server source
+│   ├── mcp-server/              # MCP server source
 │   ├── skills/
 │   │   ├── corezoid/                    # Universal assistant skill
 │   │   ├── corezoid-init/               # Environment setup skill
@@ -266,7 +264,7 @@ tail -f /tmp/corezoid.log
 In CLI mode, enable verbose output with:
 
 ```bash
-COREZOID_DEBUG=1 go run . pull-process process_id=123
+COREZOID_DEBUG=1 ./convctl pull-process process_id=123
 ```
 
 ## Troubleshooting
@@ -285,15 +283,9 @@ See [docs/Troubleshooting.md](docs/Troubleshooting.md) for solutions to common p
 |-------------------|-------------------------------|-------|
 | Claude Code       | ≥ 1.x                         | MCP protocol 2025-03-26 |
 | Codex             | current stable                | Same MCP server, same skills |
-| Go toolchain      | 1.24.x – 1.24+                | Fallback only — used when no prebuilt binary exists for the platform |
 | macOS             | 13 Ventura and later          | Tested on arm64 and amd64 |
 | Linux             | Ubuntu 22.04+, Debian 12+     | amd64 tested in CI |
 | Windows           | not tested                    | Likely works; PRs welcome |
-
-> **Note:** Go is only needed when no prebuilt binary is cached for your platform. If your Go installation
-> is older than 1.24, the toolchain manager will try to download `go1.24.0` from `proxy.golang.org`.
-> In air-gapped environments set `GOTOOLCHAIN=local` and install Go 1.24+ manually.
-> See [Troubleshooting](docs/Troubleshooting.md) for details.
 
 ## Links
 

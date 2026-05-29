@@ -6,7 +6,7 @@ package main
 var toolRegistry = []mcpTool{
 	{
 		Name:        "pull-process",
-		Description: "Export a single Corezoid process definition to a JSON file. The file is saved to the folder path matching its location in Corezoid (resolved from parent_id).",
+		Description: "Export a single Corezoid process definitions to a JSON file. The file is saved to the folder path matching its location in Corezoid (resolved from parent_id).",
 		InputSchema: map[string]interface{}{
 			"type": "object",
 			"properties": map[string]interface{}{
