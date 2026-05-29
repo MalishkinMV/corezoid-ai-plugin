@@ -9,8 +9,9 @@ import (
 	"time"
 )
 
-// handleLogin runs the OAuth2 PKCE flow and persists ACCOUNT_URL,
-// WORKSPACE_ID, COREZOID_STAGE_ID, and ACCESS_TOKEN to .env. The handler is
+// handleLogin runs the OAuth2 PKCE flow. ACCOUNT_URL, WORKSPACE_ID, and
+// COREZOID_STAGE_ID are persisted to the project .env; ACCESS_TOKEN is saved
+// to ~/.corezoid/credentials via saveCredentials(). The handler is
 // long-running and interactive (elicitation + browser OAuth), so it must NOT
 // hold the auth lock across user-facing waits; we snapshot the auth state,
 // drive the flow from locals, and re-acquire the lock only for the writes
