@@ -148,6 +148,9 @@ jobs:
           fi
           echo "No sensitive files tracked."
 
+      - name: Lint run.sh (syntax check)
+        run: sh -n plugins/corezoid/mcp-server/run.sh
+
   docs:
     name: Docs link check
     runs-on: ubuntu-latest
@@ -185,3 +188,6 @@ jobs:
 
       - name: Coverage report
         run: go tool cover -func=coverage.out
+
+      - name: Smoke test --version
+        run: go run . --version

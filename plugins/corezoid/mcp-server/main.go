@@ -20,6 +20,10 @@ import (
 //go:embed json-schema
 var schemaFS embed.FS
 
+// Version is injected at build time via -ldflags "-X main.Version=v1.2.3".
+// Falls back to "dev" for local builds.
+var Version = "dev"
+
 // Global logger instance
 var logger = &Logger{}
 
@@ -184,6 +188,11 @@ func runCLI(toolName string, rawArgs []string) {
 func main() {
 	if workDir := os.Getenv("COREZOID_WORK_DIR"); workDir != "" {
 		_ = os.Chdir(workDir)
+	}
+
+	if len(os.Args) >= 2 && (os.Args[1] == "--version" || os.Args[1] == "-version" || os.Args[1] == "version") {
+		fmt.Println(Version)
+		os.Exit(0)
 	}
 
 	// CLI mode: first argument is a tool name (e.g. "pull-folder folder_id=123").
