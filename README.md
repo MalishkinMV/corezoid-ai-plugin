@@ -6,8 +6,6 @@ A plugin for [Claude Code](https://claude.ai/code) and [Codex](https://openai.co
 
 ## What it does
 
-This plugin is more than an MCP wrapper over the Corezoid API — it is an AI-Native management layer that gives Claude deep platform knowledge and structured workflows, not just raw API access.
-
 The plugin bundles a Go MCP server that exposes Corezoid operations as MCP tools and provides specialist skills that teach Claude the platform model and common workflows:
 
 | Skill                          | Activate with                            | Covers                                            |
