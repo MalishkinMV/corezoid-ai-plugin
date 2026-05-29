@@ -30,38 +30,41 @@ func handleLogin(ctx context.Context, args map[string]interface{}) (string, bool
 		if apiToken == "" {
 			apiToken = os.Getenv("ACCESS_TOKEN")
 		}
-		if accountURL == "" {
-			accountURL = os.Getenv("ACCOUNT_URL")
-		}
-		if workspaceID == "" {
-			workspaceID = os.Getenv("WORKSPACE_ID")
-		}
-		if stageID == 0 {
-			stageID, _ = strconv.Atoi(os.Getenv("COREZOID_STAGE_ID"))
-		}
-		if apiURL == "" {
-			apiURL = os.Getenv("COREZOID_API_URL")
-		}
+		// Reload unconditionally so that values in a swapped .env override the
+		// in-memory state captured at startup — enables mid-session env switching.
+		accountURL = os.Getenv("ACCOUNT_URL")
+		workspaceID = os.Getenv("WORKSPACE_ID")
+		stageID, _ = strconv.Atoi(os.Getenv("COREZOID_STAGE_ID"))
+		apiURL = os.Getenv("COREZOID_API_URL")
 
 		// Record initial stageID to detect if it gets set during this call.
 		stageIDAtStart = stageID
 
 		// Apply any values passed directly as arguments (bypasses elicitation).
-		if v := optStrArg(args, "account_url"); v != "" && accountURL == "" {
+		// Arguments override .env so users can switch environments explicitly.
+		if v := optStrArg(args, "account_url"); v != "" {
+			if v != accountURL {
+				// Account URL changed; the derived API URL is no longer valid for the new host.
+				apiURL = ""
+				os.Setenv("COREZOID_API_URL", "")
+				if err := updateEnvFile(envPath, "COREZOID_API_URL", ""); err != nil {
+					logger.Warn("login: could not clear COREZOID_API_URL on host switch: %v", err)
+				}
+			}
 			accountURL = v
 			os.Setenv("ACCOUNT_URL", v)
 			if err := updateEnvFile(envPath, "ACCOUNT_URL", v); err != nil {
 				logger.Warn("login: could not save ACCOUNT_URL from arg: %v", err)
 			}
 		}
-		if v := optStrArg(args, "workspace_id"); v != "" && workspaceID == "" {
+		if v := optStrArg(args, "workspace_id"); v != "" {
 			workspaceID = v
 			os.Setenv("WORKSPACE_ID", v)
 			if err := updateEnvFile(envPath, "WORKSPACE_ID", v); err != nil {
 				logger.Warn("login: could not save WORKSPACE_ID from arg: %v", err)
 			}
 		}
-		if v := optStrArg(args, "stage_id"); v != "" && stageID == 0 {
+		if v := optStrArg(args, "stage_id"); v != "" {
 			if id, err := strconv.Atoi(v); err == nil && id != 0 {
 				stageID = id
 				os.Setenv("COREZOID_STAGE_ID", v)
@@ -155,6 +158,25 @@ func handleLogin(ctx context.Context, args map[string]interface{}) (string, bool
 					logger.Warn("login: could not save COREZOID_API_URL: %v", err)
 				}
 				logger.Info("login: derived COREZOID_API_URL=%q from clients API", corezoidURL)
+			}
+		}
+	} else {
+		// If we already have a token but no derived API URL (e.g. token came from
+		// .env directly without completing OAuth), fetch the URL now.
+		authStateMu.RLock()
+		apiURLEmpty := apiURL == ""
+		authStateMu.RUnlock()
+		if apiURLEmpty {
+			corezoidURL, fetchErr := fetchCorezoidAPIURL(snapAccountURL, snapToken)
+			if fetchErr != nil {
+				logger.Warn("login: fetchCorezoidAPIURL failed: %v", fetchErr)
+			} else {
+				withAuthLock(func() { apiURL = corezoidURL })
+				os.Setenv("COREZOID_API_URL", corezoidURL)
+				if err := updateEnvFile(envPath, "COREZOID_API_URL", corezoidURL); err != nil {
+					logger.Warn("login: could not save COREZOID_API_URL: %v", err)
+				}
+				logger.Info("login: derived COREZOID_API_URL=%q from clients API (pre-existing token)", corezoidURL)
 			}
 		}
 	}
@@ -416,6 +438,12 @@ func handleLogout(_ context.Context, _ map[string]interface{}) (string, bool) {
 	if err := deleteCredentials(); err != nil {
 		return fmt.Sprintf("Failed to remove credentials: %v", err), true
 	}
-	withAuthLock(func() { apiToken = "" })
+	withAuthLock(func() {
+		apiToken = ""
+		accountURL = ""
+		workspaceID = ""
+		stageID = 0
+		apiURL = ""
+	})
 	return fmt.Sprintf("Logged out. ACCESS_TOKEN removed from %s.", credPath), false
 }

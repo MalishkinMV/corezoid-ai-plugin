@@ -134,7 +134,11 @@ func downloadStageRecursively(e *Executor, folderID int, filePath string) error 
 	if err := e.checkCancel(); err != nil {
 		return err
 	}
-	data, err := e.PullZip(folderID, "stage")
+	// Try "folder" first (works for sub-folder IDs), fall back to "stage" for stage roots.
+	data, err := e.PullZip(folderID, "folder")
+	if err != nil {
+		data, err = e.PullZip(folderID, "stage")
+	}
 	if err != nil {
 		return fmt.Errorf("failed to PullZip: %w", err)
 	}
