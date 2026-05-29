@@ -44,7 +44,7 @@ log in to Corezoid
 
 ```bash
 codex plugin marketplace add ./
-codex plugin marketplace upgrade corezoid
+codex plugin install corezoid@corezoid
 ```
 
 Restart Codex, open Plugin Directory, select **Corezoid**, and confirm the plugin installs and the skills are available.
@@ -82,19 +82,19 @@ claude plugin install corezoid@corezoid
 
 ```bash
 codex plugin marketplace add corezoid/corezoid-ai-plugin --ref vX.Y.Z
-codex plugin marketplace upgrade corezoid
+codex plugin install corezoid@corezoid
 ```
 
 **Codex (development tracking):**
 
 ```bash
 codex plugin marketplace add corezoid/corezoid-ai-plugin --ref main
-codex plugin marketplace upgrade corezoid
+codex plugin install corezoid@corezoid
 ```
 
 ## 7. Notify Users
 
 After tagging, ask users to upgrade their local marketplace and plugin:
 
-- **Claude Code:** `claude plugin marketplace update && claude plugin upgrade corezoid@corezoid`
-- **Codex:** `codex plugin marketplace upgrade corezoid`
+- **Claude Code:** `claude plugin marketplace update && claude plugin update corezoid@corezoid`
+- **Codex:** `codex plugin update corezoid@corezoid`
