@@ -37,9 +37,13 @@ https://github.com/corezoid/corezoid-ai-plugin/releases/download/v{VERSION}/conv
 ```
 
 The binary is cached in `~/.cache/corezoid-mcp/{VERSION}/`. If the download fails (no network,
-unsupported platform) the launcher falls back to `go run .` from source.
+unsupported platform, or checksum mismatch) the launcher falls back to `go run .` from source.
 
-**To verify a downloaded binary** against the release SHA256 manifest:
+**Checksum verification is automatic.** `run.sh` downloads `checksums.txt` alongside the binary,
+computes the SHA256 digest, and only promotes the binary to the cache if the hashes match. A
+mismatched or missing checksum causes the download to be discarded silently.
+
+To re-verify a cached binary manually:
 
 ```bash
 curl -fsSL https://github.com/corezoid/corezoid-ai-plugin/releases/download/v{VERSION}/checksums.txt \

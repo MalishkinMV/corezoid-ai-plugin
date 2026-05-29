@@ -6,26 +6,59 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 OS=$(uname -s | tr '[:upper:]' '[:lower:]')
 ARCH=$(uname -m)
 case "$ARCH" in
-  x86_64)          ARCH="amd64" ;;
-  arm64|aarch64)   ARCH="arm64" ;;
+  x86_64)        ARCH="amd64" ;;
+  arm64|aarch64) ARCH="arm64" ;;
 esac
 
 VERSION=$(grep '"version"' "$SCRIPT_DIR/../.claude-plugin/plugin.json" 2>/dev/null \
   | sed 's/.*"version": *"\([^"]*\)".*/\1/' | head -1)
 
+# download <url> <dest>
+download() {
+  if command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$1" -o "$2" 2>/dev/null
+  elif command -v wget >/dev/null 2>&1; then
+    wget -q "$1" -O "$2" 2>/dev/null
+  else
+    return 1
+  fi
+}
+
+# sha256 <file> — prints hex digest
+sha256() {
+  if command -v sha256sum >/dev/null 2>&1; then
+    sha256sum "$1" | awk '{print $1}'
+  elif command -v shasum >/dev/null 2>&1; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  fi
+}
+
 if [ -n "$VERSION" ] && { [ "$OS" = "darwin" ] || [ "$OS" = "linux" ]; } && \
    { [ "$ARCH" = "amd64" ] || [ "$ARCH" = "arm64" ]; }; then
 
-  CACHE_BIN="$HOME/.cache/corezoid-mcp/$VERSION/convctl-${OS}-${ARCH}"
+  CACHE_DIR="$HOME/.cache/corezoid-mcp/$VERSION"
+  CACHE_BIN="$CACHE_DIR/convctl-${OS}-${ARCH}"
+  BASE_URL="https://github.com/corezoid/corezoid-ai-plugin/releases/download/v${VERSION}"
 
   if [ ! -x "$CACHE_BIN" ]; then
-    mkdir -p "$(dirname "$CACHE_BIN")"
-    URL="https://github.com/corezoid/corezoid-ai-plugin/releases/download/v${VERSION}/convctl-${OS}-${ARCH}"
-    TMP="${CACHE_BIN}.tmp"
-    if command -v curl >/dev/null 2>&1; then
-      curl -fsSL "$URL" -o "$TMP" 2>/dev/null && mv "$TMP" "$CACHE_BIN" && chmod +x "$CACHE_BIN" || rm -f "$TMP" 2>/dev/null
-    elif command -v wget >/dev/null 2>&1; then
-      wget -q "$URL" -O "$TMP" 2>/dev/null && mv "$TMP" "$CACHE_BIN" && chmod +x "$CACHE_BIN" || rm -f "$TMP" 2>/dev/null
+    mkdir -p "$CACHE_DIR"
+    TMP_BIN="${CACHE_BIN}.tmp"
+    TMP_SUMS="${CACHE_DIR}/checksums.txt.tmp"
+
+    if download "${BASE_URL}/convctl-${OS}-${ARCH}" "$TMP_BIN" && \
+       download "${BASE_URL}/checksums.txt" "$TMP_SUMS"; then
+
+      EXPECTED=$(grep "convctl-${OS}-${ARCH}$" "$TMP_SUMS" | awk '{print $1}')
+      ACTUAL=$(sha256 "$TMP_BIN")
+
+      if [ -n "$EXPECTED" ] && [ -n "$ACTUAL" ] && [ "$ACTUAL" = "$EXPECTED" ]; then
+        mv "$TMP_BIN" "$CACHE_BIN" && chmod +x "$CACHE_BIN"
+        mv "$TMP_SUMS" "${CACHE_DIR}/checksums.txt"
+      else
+        rm -f "$TMP_BIN" "$TMP_SUMS"
+      fi
+    else
+      rm -f "$TMP_BIN" "$TMP_SUMS" 2>/dev/null
     fi
   fi
 
