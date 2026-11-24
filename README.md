@@ -352,6 +352,8 @@ Workspaces, projects, stages, folders, and moving objects between them.
 | `list-folders` | List immediate children of a folder (no disk I/O) |
 | `show-folder` | Show folder metadata (title, kind, parent) |
 | `show-process` | Show a process's own metadata (title, status, owner_id/owner_login, project_id/stage_id) without exporting its scheme |
+| `list-changed-processes` | Processes under a stage/folder changed since a time (JSON, read-only) |
+| `list-process-history` | Change log of a process: node edits, commits, who and when (JSON, read-only) |
 | `create-folder` | Create a new subfolder |
 | `modify-folder` | Rename a folder or update its description |
 | `delete-folder` | Move a folder to the recycle bin |

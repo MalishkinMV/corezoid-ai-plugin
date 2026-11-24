@@ -86,6 +86,8 @@ var toolRouters = []toolRouter{
 			{"list-folders", "immediate children of a folder: subfolders, processes, state diagrams"},
 			{"show-folder", "one folder's metadata: title, obj_type, parent"},
 			{"show-process", "one process's metadata: title, status, owner_id/owner_login, project_id/stage_id"},
+			{"list-changed-processes", "processes under a stage/folder changed since a time (change_time), read-only walk"},
+			{"list-process-history", "a process's change log: who created/modified/deleted which node, commits"},
 			{"create-folder", "create a folder inside a parent folder; args: folder_name, parent folder_id or parent_path, description"},
 			{"modify-folder", "rename a folder / change its description"},
 			{"delete-folder", "move a folder to Trash (destructive)"},

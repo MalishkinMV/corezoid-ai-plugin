@@ -583,6 +583,35 @@ var collapsedToolRegistry = []mcpTool{
 		},
 	},
 	{
+		Name:        "list-changed-processes",
+		Description: "Walk a stage or folder (recursively) and return, as JSON, the processes whose change_time is at or after since (unix seconds) or since_hours ago (default 24). Read-only: list ops only, nothing written to disk.",
+		Annotations: toolHints(hintReadOnly, hintSafe, hintIdempotent, hintOpenWorld),
+		InputSchema: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"folder_id":   map[string]interface{}{"type": "integer", "description": "Stage or folder ID to walk"},
+				"since":       map[string]interface{}{"type": "integer", "description": "Unix seconds; overrides since_hours"},
+				"since_hours": map[string]interface{}{"type": "integer", "description": "Window in hours back from now (default 24, max 2160)"},
+			},
+			"required": []string{"folder_id"},
+		},
+	},
+	{
+		Name:        "list-process-history",
+		Description: "Return, as JSON, the change log of one process since a time: create/modify/delete node, confirm commit (with version), modify/deploy conv — user, time, node title. include_reads=true adds every other history entry. Read-only.",
+		Annotations: toolHints(hintReadOnly, hintSafe, hintIdempotent, hintOpenWorld),
+		InputSchema: map[string]interface{}{
+			"type": "object",
+			"properties": map[string]interface{}{
+				"process_id":    map[string]interface{}{"type": "integer", "description": "Corezoid process (conv) ID"},
+				"since":         map[string]interface{}{"type": "integer", "description": "Unix seconds; overrides since_hours"},
+				"since_hours":   map[string]interface{}{"type": "integer", "description": "Window in hours back from now (default 24, max 2160)"},
+				"include_reads": map[string]interface{}{"type": "boolean", "description": "Also return non-change entries (scheme reads etc.)"},
+			},
+			"required": []string{"process_id"},
+		},
+	},
+	{
 		Name:        "show-process",
 		Description: "Show a Corezoid process's own metadata (title, description, status, conv_type, owner_id/owner_login, project_id, stage_id, immutable) without exporting its scheme. Lighter than pull-process for an ownership/location lookup.",
 		Annotations: toolHints(hintReadOnly, hintSafe, hintIdempotent, hintOpenWorld),
